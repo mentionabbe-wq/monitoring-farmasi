@@ -3,24 +3,26 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Monitoring Farmasi RS</title>
+<title>MedTrack Pro — Sistem Rekam Medis & Farmasi Terpadu</title>
 <style>
   :root{
-    --biru:#1565c0; --biru-tua:#0d47a1; --biru-muda:#e3f2fd;
+    --biru:#0284c7; --biru-tua:#0c4a6e; --biru-muda:#e0f2fe;
     --hijau:#2e7d32; --merah:#c62828; --oranye:#ef6c00;
     --abu:#f5f7fa; --garis:#dde3ea; --teks:#263238;
   }
   *{box-sizing:border-box; margin:0; padding:0;}
   body{font-family:'Segoe UI',Arial,sans-serif; background:var(--abu); color:var(--teks); font-size:14px;}
-  header{background:linear-gradient(135deg,var(--biru-tua),var(--biru)); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
-  header h1{font-size:19px;}
-  header .sub{font-size:12px; opacity:.85;}
+  header{background:var(--biru-tua); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+  .brand{display:flex; align-items:center; gap:12px;}
+  .logo{width:46px; height:46px; background:#fff; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:26px; flex-shrink:0;}
+  header h1{font-size:20px; letter-spacing:.3px;}
+  header .sub{font-size:12px; opacity:.9;}
   .backup-btns button{margin-left:6px;}
 
-  nav{display:flex; flex-wrap:wrap; background:#fff; border-bottom:2px solid var(--garis); position:sticky; top:0; z-index:10;}
-  nav button{flex:1; min-width:140px; padding:12px 8px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:600; color:#607d8b; border-bottom:3px solid transparent;}
-  nav button.aktif{color:var(--biru); border-bottom-color:var(--biru); background:var(--biru-muda);}
-  nav button:hover{background:var(--biru-muda);}
+  nav{display:flex; flex-wrap:wrap; background:var(--biru); position:sticky; top:0; z-index:10;}
+  nav button{padding:13px 20px; border:none; background:none; cursor:pointer; font-size:14px; font-weight:600; color:#fff;}
+  nav button.aktif{background:#0ea5e9;}
+  nav button:hover:not(.aktif){background:#0369a1;}
 
   main{padding:16px; max-width:1250px; margin:0 auto;}
   .tab{display:none;}
@@ -81,9 +83,12 @@
 <body>
 
 <header>
-  <div>
-    <h1>💊 Monitoring Farmasi RS</h1>
-    <div class="sub">Antibiotik • E-RM • RM Manual • Screening Harian • Laporan Jaga IBS &nbsp; <span id="modeInfo"></span></div>
+  <div class="brand">
+    <div class="logo">🩺</div>
+    <div>
+      <h1>MedTrack Pro</h1>
+      <div class="sub">Sistem Rekam Medis &amp; Farmasi Terpadu &nbsp; <span id="modeInfo"></span></div>
+    </div>
   </div>
   <div class="backup-btns no-print">
     <button class="btn btn-csv" onclick="backupSemua()">⬇ Backup Data</button>
@@ -93,11 +98,12 @@
 </header>
 
 <nav>
-  <button class="aktif" onclick="bukaTab('antibiotik',this)">1. Form Antibiotik</button>
-  <button onclick="bukaTab('erm',this)">2. Monitoring E-RM</button>
-  <button onclick="bukaTab('rmmanual',this)">3. RM Status Manual</button>
-  <button onclick="bukaTab('screening',this)">4. Screening Harian</button>
-  <button onclick="bukaTab('ibs',this)">5. Laporan Jaga IBS</button>
+  <button class="aktif" onclick="bukaTab('antibiotik',this)">Antibiotik</button>
+  <button onclick="bukaTab('erm',this)">E-RM</button>
+  <button onclick="bukaTab('rmmanual',this)">RM Manual</button>
+  <button onclick="bukaTab('screening',this)">Screening</button>
+  <button onclick="bukaTab('highalert',this)">High Alert</button>
+  <button onclick="bukaTab('ibs',this)">Laporan Jaga IBS</button>
 </nav>
 
 <main>
@@ -216,7 +222,52 @@
   </div>
 </section>
 
-<!-- ========== 5. IBS ========== -->
+<!-- ========== 5. HIGH ALERT (PKPO) ========== -->
+<section id="tab-highalert" class="tab">
+  <div class="kartu">
+    <h2>🚨 Monitoring Penggunaan Obat High Alert (sesuai PKPO)</h2>
+    <div class="grid">
+      <div class="field"><label>Tanggal *</label><input type="date" id="ha_tanggal"></div>
+      <div class="field"><label>Nama Pasien *</label><input type="text" id="ha_nama" placeholder="Nama pasien"></div>
+      <div class="field"><label>No. RM *</label><input type="text" id="ha_norm" placeholder="No. RM"></div>
+      <div class="field"><label>Ruangan</label><input type="text" id="ha_ruangan" placeholder="Contoh: ICU, IBS"></div>
+      <div class="field"><label>Nama Obat High Alert *</label><input type="text" id="ha_obat" placeholder="Contoh: KCl 7,46%, Heparin"></div>
+      <div class="field"><label>Kategori</label>
+        <select id="ha_kategori">
+          <option value="">- Pilih -</option>
+          <option>Elektrolit Konsentrat</option>
+          <option>LASA / NORUM</option>
+          <option>Narkotika</option>
+          <option>Insulin</option>
+          <option>Antikoagulan</option>
+          <option>Sitostatika</option>
+          <option>Sedasi</option>
+          <option>Lainnya</option>
+        </select>
+      </div>
+      <div class="field"><label>Dosis / Rute</label><input type="text" id="ha_dosis" placeholder="Contoh: 25 mEq dalam 500 mL, IV"></div>
+      <div class="field"><label>Pelabelan Stiker High Alert</label>
+        <select id="ha_label"><option>BELUM</option><option>SUDAH</option></select>
+      </div>
+      <div class="field"><label>Penyimpanan Sesuai Ketentuan</label>
+        <select id="ha_simpan"><option>TIDAK</option><option>YA</option></select>
+      </div>
+      <div class="field"><label>Petugas Double Check 1</label><input type="text" id="ha_dc1" placeholder="Nama petugas 1"></div>
+      <div class="field"><label>Petugas Double Check 2</label><input type="text" id="ha_dc2" placeholder="Nama petugas 2"></div>
+      <div class="field"><label>Keterangan</label><input type="text" id="ha_ket" placeholder="Opsional"></div>
+    </div>
+    <div class="info">Sesuai standar <b>PKPO</b>: obat high alert wajib diberi label/stiker, disimpan sesuai ketentuan (elektrolit konsentrat tidak di ruang perawatan), dan diverifikasi <b>double check oleh 2 petugas</b> sebelum diberikan.</div>
+    <div class="aksi">
+      <button class="btn btn-simpan" onclick="simpan('ha')">💾 Simpan</button>
+      <button class="btn btn-batal" id="ha_batal" style="display:none" onclick="batalEdit('ha')">Batal Edit</button>
+      <button class="btn btn-csv" onclick="exportExcel('ha')">📊 Export Excel</button>
+    </div>
+    <div class="cari" style="margin-top:12px"><input type="text" id="ha_cari" placeholder="🔍 Cari nama / No. RM / obat / ruangan..." oninput="render('ha')"></div>
+    <div class="tabel-wrap"><table id="ha_tabel"></table></div>
+  </div>
+</section>
+
+<!-- ========== 6. IBS ========== -->
 <section id="tab-ibs" class="tab">
   <div class="kartu">
     <h2>🏥 Laporan Jaga IBS</h2>
@@ -296,19 +347,6 @@
     <div class="tabel-wrap"><table id="nk_tabel"></table></div>
   </div>
 
-  <!-- High Alert -->
-  <div class="kartu seksi">
-    <h3>🚨 Form High Alert</h3>
-    <div class="grid">
-      <div class="field"><label>Nama Pasien</label><input type="text" id="ha_nama"></div>
-      <div class="field"><label>No. RM</label><input type="text" id="ha_norm"></div>
-      <div class="field"><label>Obat High Alert</label><input type="text" id="ha_obat"></div>
-      <div class="field"><label>Jumlah</label><input type="number" id="ha_jumlah" min="0"></div>
-    </div>
-    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('ha')">➕ Tambah</button></div>
-    <div class="tabel-wrap"><table id="ha_tabel"></table></div>
-  </div>
-
   <!-- SDM Double Check -->
   <div class="kartu seksi">
     <h3>👥 SDM Double Check</h3>
@@ -329,7 +367,7 @@ const $ = id => document.getElementById(id);
 const hariIni = () => new Date().toISOString().slice(0,10);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTgl = t => { if(!t) return '-'; const [y,m,d]=t.split('-'); return `${d}/${m}/${y}`; };
-const SEMUA_KUNCI = ['antibiotik','erm','rmmanual','screening','ibs_operasi','ibs_cekfloor','ibs_pakaifloor','ibs_paket','ibs_narkotik','ibs_highalert','ibs_sdm'];
+const SEMUA_KUNCI = ['antibiotik','erm','rmmanual','screening','highalert','ibs_operasi','ibs_cekfloor','ibs_pakaifloor','ibs_paket','ibs_narkotik','ibs_highalert','ibs_sdm'];
 let CACHE = null; // null = data di localStorage browser; object = data di server (CasaOS)
 const muat = k => CACHE ? (CACHE[k] || []) : JSON.parse(localStorage.getItem('monfar_'+k) || '[]');
 const taruh = (k,v) => {
@@ -424,6 +462,29 @@ const MODUL = {
       {i:'sc_ruangan', k:'ruangan', l:'Asal Ruangan'}
     ],
     cari:['nama','norm','ruangan']
+  },
+  ha: {
+    key:'highalert',
+    fields:[
+      {i:'ha_tanggal', k:'tanggal', l:'Tanggal', tgl:true, wajib:true},
+      {i:'ha_nama', k:'nama', l:'Nama Pasien', wajib:true},
+      {i:'ha_norm', k:'norm', l:'No. RM', wajib:true},
+      {i:'ha_ruangan', k:'ruangan', l:'Ruangan'},
+      {i:'ha_obat', k:'obat', l:'Obat High Alert', wajib:true},
+      {i:'ha_kategori', k:'kategori', l:'Kategori'},
+      {i:'ha_dosis', k:'dosis', l:'Dosis/Rute'},
+      {i:'ha_label', k:'label', l:'Pelabelan'},
+      {i:'ha_simpan', k:'simpan', l:'Penyimpanan'},
+      {i:'ha_dc1', k:'dc1', l:'Double Check 1'},
+      {i:'ha_dc2', k:'dc2', l:'Double Check 2'},
+      {i:'ha_ket', k:'ket', l:'Keterangan'}
+    ],
+    cari:['nama','norm','obat','ruangan','kategori'],
+    badge:{
+      kategori: () => 'b-oranye',
+      label: v => v === 'SUDAH' ? 'b-hijau' : 'b-merah',
+      simpan: v => v === 'YA' ? 'b-hijau' : 'b-merah'
+    }
   }
 };
 
@@ -512,7 +573,6 @@ const IBS = {
        badge:{status: v => v === 'Sudah diganti' ? 'b-hijau' : 'b-oranye'}},
   po: {key:'ibs_paket',     label:'Input Paket Obat',     fields:[{i:'po_nama',k:'nama',l:'Nama Pasien'},{i:'po_norm',k:'norm',l:'No. RM'},{i:'po_paket',k:'paket',l:'Nama Paket Obat'},{i:'po_jumlah',k:'jumlah',l:'Jumlah'}]},
   nk: {key:'ibs_narkotik',  label:'Resep Narkotik',       fields:[{i:'nk_nama',k:'nama',l:'Nama Pasien'},{i:'nk_norm',k:'norm',l:'No. RM'},{i:'nk_obat',k:'obat',l:'Nama Obat'},{i:'nk_jumlah',k:'jumlah',l:'Jumlah'}]},
-  ha: {key:'ibs_highalert', label:'Form High Alert',      fields:[{i:'ha_nama',k:'nama',l:'Nama Pasien'},{i:'ha_norm',k:'norm',l:'No. RM'},{i:'ha_obat',k:'obat',l:'Obat High Alert'},{i:'ha_jumlah',k:'jumlah',l:'Jumlah'}]},
   dc: {key:'ibs_sdm',       label:'SDM Double Check',     fields:[{i:'dc_nama',k:'nama',l:'Nama Petugas'},{i:'dc_ket',k:'ket',l:'Keterangan'}]}
 };
 
@@ -674,7 +734,7 @@ function unduhExcel(namaFile, sheets){ // sheets: [{nama, rows:[[...]]}]
   URL.revokeObjectURL(a.href);
 }
 
-const LABEL_MODUL = {ab:'Form Antibiotik', erm:'Monitoring E-RM', rm:'RM Status Manual', sc:'Screening Harian'};
+const LABEL_MODUL = {ab:'Form Antibiotik', erm:'Monitoring E-RM', rm:'RM Status Manual', sc:'Screening Harian', ha:'Obat High Alert'};
 
 function lebih3HariTeks(r){
   if(r.form && r.form.startsWith('Sudah')) return '-';
@@ -747,7 +807,7 @@ function restoreSemua(input){
 
 /* ====================== INIT ====================== */
 function isiTanggalDefault(){
-  ['ab_tanggal','erm_tglmasuk','rm_tglmasuk','sc_tanggal'].forEach(id => { if(!$(id).value) $(id).value = hariIni(); });
+  ['ab_tanggal','erm_tglmasuk','rm_tglmasuk','sc_tanggal','ha_tanggal'].forEach(id => { if(!$(id).value) $(id).value = hariIni(); });
 }
 function ermToggle(){
   const sudah = $('erm_status').value === 'Sudah';

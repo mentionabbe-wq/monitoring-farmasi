@@ -1,4 +1,4 @@
-# Monitoring Farmasi RS
+# MedTrack Pro — Sistem Rekam Medis & Farmasi Terpadu
 
 Aplikasi input dan monitoring farmasi rumah sakit:
 
@@ -6,7 +6,8 @@ Aplikasi input dan monitoring farmasi rumah sakit:
 2. **Monitoring Pengisian E-RM**
 3. **Monitoring Pengisian RM Status Manual** (CPPO, rekonsiliasi obat, edukasi)
 4. **Screening Harian**
-5. **Laporan Jaga IBS** — jenis operasi, cek floor stok, pemakaian floorstock, input paket obat, resep narkotik, form high alert, SDM double check (tiap seksi multi-baris, tersimpan per tanggal)
+5. **Monitoring Obat High Alert (PKPO)** — kategori obat (elektrolit konsentrat, LASA/NORUM, dll), pelabelan stiker, penyimpanan, double check 2 petugas
+6. **Laporan Jaga IBS** — jenis operasi, cek floor stok, pemakaian floorstock, input paket obat, resep narkotik, SDM double check (tiap seksi multi-baris, tersimpan per tanggal)
 
 Fitur: pencarian, edit/hapus, export Excel (.xlsx) per modul, laporan IBS satu workbook
 berisi 7 sheet, cetak laporan, backup/restore JSON.
