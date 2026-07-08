@@ -44,6 +44,7 @@
   .btn-simpan:hover{background:var(--biru-tua);}
   .btn-batal{background:#eceff1; color:#455a64;}
   .btn-csv{background:var(--hijau); color:#fff;}
+  a.btn-unduh{background:#455a64; color:#fff; text-decoration:none; display:inline-block;}
   .btn-print{background:#455a64; color:#fff;}
   .btn-kecil{padding:4px 10px; font-size:12px; border:none; border-radius:5px; cursor:pointer; font-weight:600;}
   .btn-edit{background:#fff3e0; color:var(--oranye);}
@@ -149,6 +150,7 @@
       <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
       <button class="btn btn-batal" id="ab_batal" style="display:none" onclick="batalEdit('ab')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('ab')">📊 Export Excel</button>
+      <a class="btn btn-unduh" id="dl_ab" href="form/Formulir-Antibiotik.docx" download>📄 Download Formulir (Word)</a>
     </div>
     <div class="cari" style="margin-top:12px"><input type="text" id="ab_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="render('ab')"></div>
     <div class="tabel-wrap"><table id="ab_tabel"></table></div>
@@ -272,6 +274,7 @@
       <button class="btn btn-simpan" onclick="simpan('ha')">💾 Simpan</button>
       <button class="btn btn-batal" id="ha_batal" style="display:none" onclick="batalEdit('ha')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('ha')">📊 Export Excel</button>
+      <a class="btn btn-unduh" id="dl_ha" href="form/Formulir-High-Alert-PKPO.docx" download>📄 Download Formulir (Word)</a>
     </div>
     <div class="cari" style="margin-top:12px"><input type="text" id="ha_cari" placeholder="🔍 Cari nama / No. RM / obat / ruangan..." oninput="render('ha')"></div>
     <div class="tabel-wrap"><table id="ha_tabel"></table></div>
@@ -875,6 +878,11 @@ function semuaRender(){ Object.keys(MODUL).forEach(render); renderIBS(); }
 
 $('ibs_tanggal').value = hariIni();
 isiTanggalDefault();
+// mode file:// tidak punya server -> arahkan download formulir ke GitHub
+if(location.protocol === 'file:'){
+  $('dl_ab').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Formulir-Antibiotik.docx';
+  $('dl_ha').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Formulir-High-Alert-PKPO.docx';
+}
 (async function(){
   if(location.protocol !== 'file:'){
     try{

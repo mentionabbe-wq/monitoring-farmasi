@@ -15,11 +15,13 @@ file `monfar-db.json`, sehingga aplikasi bisa dibuka dari banyak perangkat
 ### 1. Upload file aplikasi
 1. Buka CasaOS di browser, masuk ke aplikasi **Files**.
 2. Masuk ke folder `/DATA/AppData`, buat folder baru: `monitoring-farmasi`.
-3. Di dalamnya buat folder `app`, lalu **upload 2 file** ke sana:
+3. Di dalamnya buat folder `app`, lalu **upload 2 file + 1 folder** ke sana:
    - `index.html`
    - `server.js`
+   - folder `form/` (berisi formulir Word yang bisa di-download dari aplikasi)
 
-   Hasil akhirnya: `/DATA/AppData/monitoring-farmasi/app/index.html` dan `.../app/server.js`
+   Hasil akhirnya: `/DATA/AppData/monitoring-farmasi/app/index.html`,
+   `.../app/server.js`, dan `.../app/form/*.docx`
 
 ### 2. Install aplikasinya
 1. Di dashboard CasaOS klik tombol **+** → **Install a customized app**.

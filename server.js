@@ -55,6 +55,20 @@ http.createServer((req, res) => {
     return;
   }
 
+  // Unduhan formulir Word (folder form/, hanya nama file .docx sederhana)
+  const mForm = url.pathname.match(/^\/form\/([A-Za-z0-9._-]+\.docx)$/);
+  if (req.method === 'GET' && mForm) {
+    const fp = path.join(__dirname, 'form', mForm[1]);
+    if (fs.existsSync(fp)) {
+      res.writeHead(200, {
+        'Content-Type': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+        'Content-Disposition': 'attachment; filename="' + mForm[1] + '"'
+      });
+      fs.createReadStream(fp).pipe(res);
+      return;
+    }
+  }
+
   // Halaman aplikasi
   if (req.method === 'GET' && (url.pathname === '/' || url.pathname === '/index.html')) {
     res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
