@@ -310,7 +310,7 @@
       <div class="field"><label>Nama Barang</label><input type="text" id="cf_barang"></div>
       <div class="field"><label>Jumlah Asal</label><input type="number" id="cf_asal" min="0" oninput="cfTotal()"></div>
       <div class="field"><label>Jumlah Asli</label><input type="number" id="cf_asli" min="0" oninput="cfTotal()"></div>
-      <div class="field"><label>Total (Asal + Asli)</label><input type="number" id="cf_total" readonly style="background:#eceff1"></div>
+      <div class="field"><label>Selisih (Asli − Asal)</label><input type="number" id="cf_total" readonly style="background:#eceff1"></div>
     </div>
     <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('cf')">➕ Tambah</button></div>
     <div class="tabel-wrap"><table id="cf_tabel"></table></div>
@@ -625,7 +625,8 @@ function pilihObatHA(obat, kategori){
 /* ====================== IBS (multi-input per seksi) ====================== */
 const IBS = {
   op: {key:'ibs_operasi',   label:'Jenis Operasi',        fields:[{i:'op_nama',k:'nama',l:'Nama Pasien'},{i:'op_norm',k:'norm',l:'No. RM'},{i:'op_operasi',k:'operasi',l:'Nama Operasi'}]},
-  cf: {key:'ibs_cekfloor',  label:'Cek Floor Stok',       fields:[{i:'cf_barang',k:'barang',l:'Nama Barang'},{i:'cf_asal',k:'asal',l:'Jumlah Asal'},{i:'cf_asli',k:'asli',l:'Jumlah Asli'},{i:'cf_total',k:'total',l:'Total'}]},
+  cf: {key:'ibs_cekfloor',  label:'Cek Floor Stok',       fields:[{i:'cf_barang',k:'barang',l:'Nama Barang'},{i:'cf_asal',k:'asal',l:'Jumlah Asal'},{i:'cf_asli',k:'asli',l:'Jumlah Asli'},{i:'cf_total',k:'total',l:'Selisih'}],
+       badge:{total: v => parseFloat(v) === 0 ? 'b-hijau' : 'b-merah'}},
   pf: {key:'ibs_pakaifloor',label:'Pemakaian Floorstock', fields:[{i:'pf_nama',k:'nama',l:'Nama Pasien'},{i:'pf_norm',k:'norm',l:'No. RM'},{i:'pf_barang',k:'barang',l:'Nama Barang'},{i:'pf_jumlah',k:'jumlah',l:'Jumlah'},{i:'pf_status',k:'status',l:'Status'}],
        badge:{status: v => v === 'Sudah diganti' ? 'b-hijau' : 'b-oranye'}},
   po: {key:'ibs_paket',     label:'Input Paket Obat',     fields:[{i:'po_nama',k:'nama',l:'Nama Pasien'},{i:'po_norm',k:'norm',l:'No. RM'},{i:'po_paket',k:'paket',l:'Nama Paket Obat'},{i:'po_jumlah',k:'jumlah',l:'Jumlah'}]},
@@ -636,7 +637,7 @@ const IBS = {
 function cfTotal(){
   const a = parseFloat($('cf_asal').value) || 0;
   const b = parseFloat($('cf_asli').value) || 0;
-  $('cf_total').value = a + b;
+  $('cf_total').value = b - a; // selisih: jumlah asli dikurangi jumlah asal (0 = stok sesuai)
 }
 
 function simpanIBS(s){
