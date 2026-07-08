@@ -1,0 +1,779 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Monitoring Farmasi RS</title>
+<style>
+  :root{
+    --biru:#1565c0; --biru-tua:#0d47a1; --biru-muda:#e3f2fd;
+    --hijau:#2e7d32; --merah:#c62828; --oranye:#ef6c00;
+    --abu:#f5f7fa; --garis:#dde3ea; --teks:#263238;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI',Arial,sans-serif; background:var(--abu); color:var(--teks); font-size:14px;}
+  header{background:linear-gradient(135deg,var(--biru-tua),var(--biru)); color:#fff; padding:14px 20px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;}
+  header h1{font-size:19px;}
+  header .sub{font-size:12px; opacity:.85;}
+  .backup-btns button{margin-left:6px;}
+
+  nav{display:flex; flex-wrap:wrap; background:#fff; border-bottom:2px solid var(--garis); position:sticky; top:0; z-index:10;}
+  nav button{flex:1; min-width:140px; padding:12px 8px; border:none; background:none; cursor:pointer; font-size:13px; font-weight:600; color:#607d8b; border-bottom:3px solid transparent;}
+  nav button.aktif{color:var(--biru); border-bottom-color:var(--biru); background:var(--biru-muda);}
+  nav button:hover{background:var(--biru-muda);}
+
+  main{padding:16px; max-width:1250px; margin:0 auto;}
+  .tab{display:none;}
+  .tab.aktif{display:block;}
+
+  .kartu{background:#fff; border:1px solid var(--garis); border-radius:10px; padding:16px; margin-bottom:16px; box-shadow:0 1px 3px rgba(0,0,0,.05);}
+  .kartu h2{font-size:16px; color:var(--biru-tua); margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--biru-muda);}
+  .kartu h3{font-size:14px; color:var(--biru-tua); margin-bottom:10px;}
+
+  .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px;}
+  .field{display:flex; flex-direction:column; gap:4px;}
+  .field label{font-size:12px; font-weight:600; color:#546e7a;}
+  .field input,.field select,.field textarea{padding:8px; border:1px solid var(--garis); border-radius:6px; font-size:13px; font-family:inherit; background:#fff;}
+  .field input:focus,.field select:focus{outline:2px solid var(--biru-muda); border-color:var(--biru);}
+
+  .aksi{margin-top:12px; display:flex; gap:8px; flex-wrap:wrap;}
+  button.btn{padding:9px 18px; border:none; border-radius:6px; font-size:13px; font-weight:600; cursor:pointer;}
+  .btn-simpan{background:var(--biru); color:#fff;}
+  .btn-simpan:hover{background:var(--biru-tua);}
+  .btn-batal{background:#eceff1; color:#455a64;}
+  .btn-csv{background:var(--hijau); color:#fff;}
+  .btn-print{background:#455a64; color:#fff;}
+  .btn-kecil{padding:4px 10px; font-size:12px; border:none; border-radius:5px; cursor:pointer; font-weight:600;}
+  .btn-edit{background:#fff3e0; color:var(--oranye);}
+  .btn-hapus{background:#ffebee; color:var(--merah);}
+
+  .tabel-wrap{overflow-x:auto; margin-top:14px;}
+  table{width:100%; border-collapse:collapse; font-size:13px; background:#fff;}
+  th{background:var(--biru-tua); color:#fff; padding:8px 10px; text-align:left; white-space:nowrap; font-size:12px;}
+  td{padding:7px 10px; border-bottom:1px solid var(--garis); vertical-align:top;}
+  tr:nth-child(even) td{background:#f8fafc;}
+  tr:hover td{background:var(--biru-muda);}
+  .kosong{text-align:center; color:#90a4ae; padding:18px !important; font-style:italic;}
+
+  .badge{display:inline-block; padding:3px 10px; border-radius:12px; font-size:11px; font-weight:700; white-space:nowrap;}
+  .b-hijau{background:#e8f5e9; color:var(--hijau);}
+  .b-merah{background:#ffebee; color:var(--merah);}
+  .b-oranye{background:#fff3e0; color:var(--oranye);}
+  .b-abu{background:#eceff1; color:#546e7a;}
+
+  .cari{margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .cari input{padding:8px 12px; border:1px solid var(--garis); border-radius:6px; min-width:230px;}
+
+  .ibs-tgl{display:flex; align-items:center; gap:10px; flex-wrap:wrap;}
+  .ibs-tgl input{padding:8px; border:1px solid var(--garis); border-radius:6px; font-size:14px; font-weight:600;}
+  .seksi{border-left:4px solid var(--biru); }
+  .info{font-size:12px; color:#78909c; margin-top:6px;}
+
+  @media print{
+    header, nav, .aksi, .cari, .btn-kecil, .no-print, th:last-child, td:last-child{display:none !important;}
+    body{background:#fff;}
+    .kartu{box-shadow:none; border:1px solid #999; page-break-inside:avoid;}
+    .tab{display:none;}
+    .tab.aktif{display:block;}
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div>
+    <h1>💊 Monitoring Farmasi RS</h1>
+    <div class="sub">Antibiotik • E-RM • RM Manual • Screening Harian • Laporan Jaga IBS &nbsp; <span id="modeInfo"></span></div>
+  </div>
+  <div class="backup-btns no-print">
+    <button class="btn btn-csv" onclick="backupSemua()">⬇ Backup Data</button>
+    <button class="btn btn-batal" onclick="document.getElementById('fileRestore').click()">⬆ Restore</button>
+    <input type="file" id="fileRestore" accept=".json" style="display:none" onchange="restoreSemua(this)">
+  </div>
+</header>
+
+<nav>
+  <button class="aktif" onclick="bukaTab('antibiotik',this)">1. Form Antibiotik</button>
+  <button onclick="bukaTab('erm',this)">2. Monitoring E-RM</button>
+  <button onclick="bukaTab('rmmanual',this)">3. RM Status Manual</button>
+  <button onclick="bukaTab('screening',this)">4. Screening Harian</button>
+  <button onclick="bukaTab('ibs',this)">5. Laporan Jaga IBS</button>
+</nav>
+
+<main>
+
+<!-- ========== 1. ANTIBIOTIK ========== -->
+<section id="tab-antibiotik" class="tab aktif">
+  <div class="kartu">
+    <h2>📋 Form Antibiotik</h2>
+    <div class="grid">
+      <div class="field"><label>Tanggal Awal Antibiotik *</label><input type="date" id="ab_tanggal"></div>
+      <div class="field"><label>Nama Pasien *</label><input type="text" id="ab_nama" placeholder="Nama pasien"></div>
+      <div class="field"><label>Asal Ruangan</label><input type="text" id="ab_ruangan" placeholder="Contoh: ICU, Anggrek"></div>
+      <div class="field"><label>Nomor Rekam Medis *</label><input type="text" id="ab_norm" placeholder="No. RM"></div>
+      <div class="field"><label>Jenis Antibiotik</label>
+        <select id="ab_jenis">
+          <option value="">- Pilih -</option>
+          <option>Empiris</option>
+          <option>Definitif</option>
+          <option>Profilaksis</option>
+        </select>
+      </div>
+      <div class="field"><label>Nama Antibiotik</label><input type="text" id="ab_antibiotik" placeholder="Contoh: Ceftriaxone"></div>
+      <div class="field"><label>Dosis</label><input type="text" id="ab_dosis" placeholder="Contoh: 2x1 gr IV"></div>
+      <div class="field"><label>Dokter</label><input type="text" id="ab_dokter" placeholder="Nama dokter (DPJP)"></div>
+      <div class="field"><label>Pengisian Formulir</label>
+        <select id="ab_form">
+          <option>Belum mengumpulkan form</option>
+          <option>Sudah mengumpulkan form</option>
+        </select>
+      </div>
+    </div>
+    <div class="info">Kolom <b>"Lebih 3 Hari"</b> dihitung otomatis: jika form <b>belum</b> dikumpulkan dan sudah lewat 3 hari dari tanggal awal antibiotik.</div>
+    <div class="aksi">
+      <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
+      <button class="btn btn-batal" id="ab_batal" style="display:none" onclick="batalEdit('ab')">Batal Edit</button>
+      <button class="btn btn-csv" onclick="exportExcel('ab')">📊 Export Excel</button>
+    </div>
+    <div class="cari" style="margin-top:12px"><input type="text" id="ab_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="render('ab')"></div>
+    <div class="tabel-wrap"><table id="ab_tabel"></table></div>
+  </div>
+</section>
+
+<!-- ========== 2. E-RM ========== -->
+<section id="tab-erm" class="tab">
+  <div class="kartu">
+    <h2>🖥️ Monitoring Pengisian E-RM</h2>
+    <div class="grid">
+      <div class="field"><label>Tanggal Masuk Pasien *</label><input type="date" id="erm_tglmasuk"></div>
+      <div class="field"><label>Nama Pasien *</label><input type="text" id="erm_nama" placeholder="Nama pasien"></div>
+      <div class="field"><label>Nomor RM *</label><input type="text" id="erm_norm" placeholder="No. RM"></div>
+      <div class="field"><label>Pengisian E-RM</label>
+        <select id="erm_status" onchange="ermToggle()">
+          <option>Belum</option>
+          <option>Sudah</option>
+        </select>
+      </div>
+      <div class="field"><label>Tanggal Pengisian E-RM</label><input type="date" id="erm_tglisi"></div>
+      <div class="field"><label>Nama Pengisi E-RM</label><input type="text" id="erm_pengisi" placeholder="Nama petugas pengisi"></div>
+    </div>
+    <div class="aksi">
+      <button class="btn btn-simpan" onclick="simpan('erm')">💾 Simpan</button>
+      <button class="btn btn-batal" id="erm_batal" style="display:none" onclick="batalEdit('erm')">Batal Edit</button>
+      <button class="btn btn-csv" onclick="exportExcel('erm')">📊 Export Excel</button>
+    </div>
+    <div class="cari" style="margin-top:12px"><input type="text" id="erm_cari" placeholder="🔍 Cari nama / No. RM..." oninput="render('erm')"></div>
+    <div class="tabel-wrap"><table id="erm_tabel"></table></div>
+  </div>
+</section>
+
+<!-- ========== 3. RM MANUAL ========== -->
+<section id="tab-rmmanual" class="tab">
+  <div class="kartu">
+    <h2>📁 Monitoring Pengisian RM Status Manual</h2>
+    <div class="grid">
+      <div class="field"><label>Nama Pasien *</label><input type="text" id="rm_nama" placeholder="Nama pasien"></div>
+      <div class="field"><label>Nomor RM *</label><input type="text" id="rm_norm" placeholder="No. RM"></div>
+      <div class="field"><label>Tanggal Masuk Pasien *</label><input type="date" id="rm_tglmasuk"></div>
+      <div class="field"><label>Tanggal Pulang Pasien</label><input type="date" id="rm_tglpulang"></div>
+      <div class="field"><label>CPPO</label>
+        <select id="rm_cppo"><option>BELUM</option><option>SUDAH</option></select>
+      </div>
+      <div class="field"><label>Rekonsiliasi Obat</label>
+        <select id="rm_rekon"><option>BELUM</option><option>SUDAH</option></select>
+      </div>
+      <div class="field"><label>Edukasi</label>
+        <select id="rm_edukasi"><option>BELUM</option><option>SUDAH</option></select>
+      </div>
+    </div>
+    <div class="aksi">
+      <button class="btn btn-simpan" onclick="simpan('rm')">💾 Simpan</button>
+      <button class="btn btn-batal" id="rm_batal" style="display:none" onclick="batalEdit('rm')">Batal Edit</button>
+      <button class="btn btn-csv" onclick="exportExcel('rm')">📊 Export Excel</button>
+    </div>
+    <div class="cari" style="margin-top:12px"><input type="text" id="rm_cari" placeholder="🔍 Cari nama / No. RM..." oninput="render('rm')"></div>
+    <div class="tabel-wrap"><table id="rm_tabel"></table></div>
+  </div>
+</section>
+
+<!-- ========== 4. SCREENING ========== -->
+<section id="tab-screening" class="tab">
+  <div class="kartu">
+    <h2>🔎 Screening Harian</h2>
+    <div class="grid">
+      <div class="field"><label>Tanggal *</label><input type="date" id="sc_tanggal"></div>
+      <div class="field"><label>Nama Pasien *</label><input type="text" id="sc_nama" placeholder="Nama pasien"></div>
+      <div class="field"><label>No. RM *</label><input type="text" id="sc_norm" placeholder="No. RM"></div>
+      <div class="field"><label>Asal Ruangan</label><input type="text" id="sc_ruangan" placeholder="Contoh: IGD, Melati"></div>
+    </div>
+    <div class="aksi">
+      <button class="btn btn-simpan" onclick="simpan('sc')">💾 Simpan</button>
+      <button class="btn btn-batal" id="sc_batal" style="display:none" onclick="batalEdit('sc')">Batal Edit</button>
+      <button class="btn btn-csv" onclick="exportExcel('sc')">📊 Export Excel</button>
+    </div>
+    <div class="cari" style="margin-top:12px"><input type="text" id="sc_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="render('sc')"></div>
+    <div class="tabel-wrap"><table id="sc_tabel"></table></div>
+  </div>
+</section>
+
+<!-- ========== 5. IBS ========== -->
+<section id="tab-ibs" class="tab">
+  <div class="kartu">
+    <h2>🏥 Laporan Jaga IBS</h2>
+    <div class="ibs-tgl">
+      <label style="font-weight:700">Tanggal Laporan:</label>
+      <input type="date" id="ibs_tanggal" onchange="renderIBS()">
+      <button class="btn btn-print no-print" onclick="window.print()">🖨️ Cetak Laporan</button>
+      <button class="btn btn-csv no-print" onclick="exportIBS()">📊 Export Excel (semua seksi)</button>
+    </div>
+    <div class="info">Semua data di bawah tersimpan per tanggal laporan. Setiap seksi bisa diisi & disimpan berkali-kali (banyak baris).</div>
+  </div>
+
+  <!-- Jenis Operasi -->
+  <div class="kartu seksi">
+    <h3>🔪 Jenis Operasi</h3>
+    <div class="grid">
+      <div class="field"><label>Nama Pasien</label><input type="text" id="op_nama"></div>
+      <div class="field"><label>No. RM</label><input type="text" id="op_norm"></div>
+      <div class="field"><label>Nama Operasi</label><input type="text" id="op_operasi" placeholder="Contoh: SC, Laparotomi"></div>
+    </div>
+    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('op')">➕ Tambah</button></div>
+    <div class="tabel-wrap"><table id="op_tabel"></table></div>
+  </div>
+
+  <!-- Cek Floor Stok -->
+  <div class="kartu seksi">
+    <h3>📦 Cek Floor Stok</h3>
+    <div class="grid">
+      <div class="field"><label>Nama Barang</label><input type="text" id="cf_barang"></div>
+      <div class="field"><label>Jumlah Asal</label><input type="number" id="cf_asal" min="0" oninput="cfTotal()"></div>
+      <div class="field"><label>Jumlah Asli</label><input type="number" id="cf_asli" min="0" oninput="cfTotal()"></div>
+      <div class="field"><label>Total (Asal + Asli)</label><input type="number" id="cf_total" readonly style="background:#eceff1"></div>
+    </div>
+    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('cf')">➕ Tambah</button></div>
+    <div class="tabel-wrap"><table id="cf_tabel"></table></div>
+  </div>
+
+  <!-- Pemakaian Floorstock -->
+  <div class="kartu seksi">
+    <h3>💉 Pemakaian Floorstock</h3>
+    <div class="grid">
+      <div class="field"><label>Nama Pasien</label><input type="text" id="pf_nama"></div>
+      <div class="field"><label>No. RM</label><input type="text" id="pf_norm"></div>
+      <div class="field"><label>Nama Barang</label><input type="text" id="pf_barang"></div>
+      <div class="field"><label>Jumlah</label><input type="number" id="pf_jumlah" min="0"></div>
+      <div class="field"><label>Status Penggantian</label>
+        <select id="pf_status"><option>Belum diganti</option><option>Sudah diganti</option></select>
+      </div>
+    </div>
+    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('pf')">➕ Tambah</button></div>
+    <div class="tabel-wrap"><table id="pf_tabel"></table></div>
+  </div>
+
+  <!-- Input Paket Obat -->
+  <div class="kartu seksi">
+    <h3>📦 Input Paket Obat</h3>
+    <div class="grid">
+      <div class="field"><label>Nama Pasien</label><input type="text" id="po_nama"></div>
+      <div class="field"><label>No. RM</label><input type="text" id="po_norm"></div>
+      <div class="field"><label>Nama Paket Obat</label><input type="text" id="po_paket"></div>
+      <div class="field"><label>Jumlah</label><input type="number" id="po_jumlah" min="0"></div>
+    </div>
+    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('po')">➕ Tambah</button></div>
+    <div class="tabel-wrap"><table id="po_tabel"></table></div>
+  </div>
+
+  <!-- Resep Narkotik -->
+  <div class="kartu seksi">
+    <h3>⚠️ Resep Narkotik</h3>
+    <div class="grid">
+      <div class="field"><label>Nama Pasien</label><input type="text" id="nk_nama"></div>
+      <div class="field"><label>No. RM</label><input type="text" id="nk_norm"></div>
+      <div class="field"><label>Nama Obat Narkotik</label><input type="text" id="nk_obat"></div>
+      <div class="field"><label>Jumlah</label><input type="number" id="nk_jumlah" min="0"></div>
+    </div>
+    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('nk')">➕ Tambah</button></div>
+    <div class="tabel-wrap"><table id="nk_tabel"></table></div>
+  </div>
+
+  <!-- High Alert -->
+  <div class="kartu seksi">
+    <h3>🚨 Form High Alert</h3>
+    <div class="grid">
+      <div class="field"><label>Nama Pasien</label><input type="text" id="ha_nama"></div>
+      <div class="field"><label>No. RM</label><input type="text" id="ha_norm"></div>
+      <div class="field"><label>Obat High Alert</label><input type="text" id="ha_obat"></div>
+      <div class="field"><label>Jumlah</label><input type="number" id="ha_jumlah" min="0"></div>
+    </div>
+    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('ha')">➕ Tambah</button></div>
+    <div class="tabel-wrap"><table id="ha_tabel"></table></div>
+  </div>
+
+  <!-- SDM Double Check -->
+  <div class="kartu seksi">
+    <h3>👥 SDM Double Check</h3>
+    <div class="grid">
+      <div class="field"><label>Nama Petugas</label><input type="text" id="dc_nama" placeholder="Nama petugas double check"></div>
+      <div class="field"><label>Keterangan</label><input type="text" id="dc_ket" placeholder="Opsional"></div>
+    </div>
+    <div class="aksi"><button class="btn btn-simpan" onclick="simpanIBS('dc')">➕ Tambah</button></div>
+    <div class="tabel-wrap"><table id="dc_tabel"></table></div>
+  </div>
+</section>
+
+</main>
+
+<script>
+/* ====================== UTIL ====================== */
+const $ = id => document.getElementById(id);
+const hariIni = () => new Date().toISOString().slice(0,10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmtTgl = t => { if(!t) return '-'; const [y,m,d]=t.split('-'); return `${d}/${m}/${y}`; };
+const SEMUA_KUNCI = ['antibiotik','erm','rmmanual','screening','ibs_operasi','ibs_cekfloor','ibs_pakaifloor','ibs_paket','ibs_narkotik','ibs_highalert','ibs_sdm'];
+let CACHE = null; // null = data di localStorage browser; object = data di server (CasaOS)
+const muat = k => CACHE ? (CACHE[k] || []) : JSON.parse(localStorage.getItem('monfar_'+k) || '[]');
+const taruh = (k,v) => {
+  if(CACHE){ CACHE[k] = v; kirimServer(k, v); }
+  else localStorage.setItem('monfar_'+k, JSON.stringify(v));
+};
+function kirimServer(k, v){
+  fetch('api/data/'+k, {method:'PUT', headers:{'Content-Type':'application/json'}, body:JSON.stringify(v)})
+    .then(r => { if(!r.ok) throw new Error(r.status); infoMode(); })
+    .catch(() => infoMode('Gagal menyimpan ke server — periksa koneksi!'));
+}
+function infoMode(pesanError){
+  const el = $('modeInfo');
+  if(pesanError){ el.textContent = '⚠ ' + pesanError; el.style.color = '#ffcdd2'; return; }
+  if(CACHE){ el.textContent = '● data tersimpan di server'; el.style.color = '#a5d6a7'; }
+  else { el.textContent = '● data tersimpan di browser ini'; el.style.color = '#ffe082'; }
+}
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2,7);
+
+function bukaTab(nama, btn){
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('aktif'));
+  document.querySelectorAll('nav button').forEach(b=>b.classList.remove('aktif'));
+  $('tab-'+nama).classList.add('aktif');
+  btn.classList.add('aktif');
+}
+
+/* ====================== KONFIGURASI MODUL UTAMA ====================== */
+/* tiap modul: key penyimpanan, daftar field {id input, key data, label}, kolom pencarian */
+const MODUL = {
+  ab: {
+    key:'antibiotik',
+    fields:[
+      {i:'ab_tanggal', k:'tanggal', l:'Tanggal Awal AB', tgl:true},
+      {i:'ab_nama', k:'nama', l:'Nama Pasien', wajib:true},
+      {i:'ab_ruangan', k:'ruangan', l:'Asal Ruangan'},
+      {i:'ab_norm', k:'norm', l:'No. RM', wajib:true},
+      {i:'ab_jenis', k:'jenis', l:'Jenis AB'},
+      {i:'ab_antibiotik', k:'antibiotik', l:'Nama Antibiotik'},
+      {i:'ab_dosis', k:'dosis', l:'Dosis'},
+      {i:'ab_dokter', k:'dokter', l:'Dokter'},
+      {i:'ab_form', k:'form', l:'Pengisian Formulir'}
+    ],
+    cari:['nama','norm','ruangan','antibiotik','dokter'],
+    ekstraTh:'<th>Lebih 3 Hari</th>',
+    ekstraTd: r => {
+      if(r.form && r.form.startsWith('Sudah')) return '<td><span class="badge b-abu">-</span></td>';
+      if(!r.tanggal) return '<td>-</td>';
+      const selisih = Math.floor((new Date(hariIni()) - new Date(r.tanggal)) / 86400000);
+      return selisih > 3
+        ? `<td><span class="badge b-merah">YA (${selisih} hari)</span></td>`
+        : `<td><span class="badge b-hijau">Tidak (${selisih} hari)</span></td>`;
+    },
+    badge:{form: v => v && v.startsWith('Sudah') ? 'b-hijau' : 'b-merah'}
+  },
+  erm: {
+    key:'erm',
+    fields:[
+      {i:'erm_tglmasuk', k:'tglmasuk', l:'Tgl Masuk', tgl:true, wajib:true},
+      {i:'erm_nama', k:'nama', l:'Nama Pasien', wajib:true},
+      {i:'erm_norm', k:'norm', l:'No. RM', wajib:true},
+      {i:'erm_status', k:'status', l:'Pengisian E-RM'},
+      {i:'erm_tglisi', k:'tglisi', l:'Tgl Pengisian', tgl:true},
+      {i:'erm_pengisi', k:'pengisi', l:'Nama Pengisi'}
+    ],
+    cari:['nama','norm','pengisi'],
+    badge:{status: v => v === 'Sudah' ? 'b-hijau' : 'b-merah'}
+  },
+  rm: {
+    key:'rmmanual',
+    fields:[
+      {i:'rm_nama', k:'nama', l:'Nama Pasien', wajib:true},
+      {i:'rm_norm', k:'norm', l:'No. RM', wajib:true},
+      {i:'rm_tglmasuk', k:'tglmasuk', l:'Tgl Masuk', tgl:true, wajib:true},
+      {i:'rm_tglpulang', k:'tglpulang', l:'Tgl Pulang', tgl:true},
+      {i:'rm_cppo', k:'cppo', l:'CPPO'},
+      {i:'rm_rekon', k:'rekon', l:'Rekonsiliasi Obat'},
+      {i:'rm_edukasi', k:'edukasi', l:'Edukasi'}
+    ],
+    cari:['nama','norm'],
+    badge:{
+      cppo: v => v === 'SUDAH' ? 'b-hijau' : 'b-merah',
+      rekon: v => v === 'SUDAH' ? 'b-hijau' : 'b-merah',
+      edukasi: v => v === 'SUDAH' ? 'b-hijau' : 'b-merah'
+    }
+  },
+  sc: {
+    key:'screening',
+    fields:[
+      {i:'sc_tanggal', k:'tanggal', l:'Tanggal', tgl:true, wajib:true},
+      {i:'sc_nama', k:'nama', l:'Nama Pasien', wajib:true},
+      {i:'sc_norm', k:'norm', l:'No. RM', wajib:true},
+      {i:'sc_ruangan', k:'ruangan', l:'Asal Ruangan'}
+    ],
+    cari:['nama','norm','ruangan']
+  }
+};
+
+let editId = {}; // {ab: id|null, ...}
+
+function simpan(m){
+  const cfg = MODUL[m];
+  const rec = {};
+  for(const f of cfg.fields){
+    rec[f.k] = $(f.i).value.trim();
+    if(f.wajib && !rec[f.k]){ alert('Kolom "'+f.l+'" wajib diisi.'); $(f.i).focus(); return; }
+  }
+  // minimal harus ada nama atau tanggal
+  const data = muat(cfg.key);
+  if(editId[m]){
+    const idx = data.findIndex(r => r.id === editId[m]);
+    if(idx >= 0) data[idx] = {...data[idx], ...rec};
+    editId[m] = null;
+    $(m+'_batal').style.display = 'none';
+  } else {
+    rec.id = uid();
+    data.unshift(rec);
+  }
+  taruh(cfg.key, data);
+  cfg.fields.forEach(f => { const el=$(f.i); el.tagName==='SELECT' ? el.selectedIndex=0 : el.value=''; });
+  isiTanggalDefault();
+  render(m);
+}
+
+function editRec(m, id){
+  const cfg = MODUL[m];
+  const r = muat(cfg.key).find(x => x.id === id);
+  if(!r) return;
+  cfg.fields.forEach(f => $(f.i).value = r[f.k] || '');
+  editId[m] = id;
+  $(m+'_batal').style.display = 'inline-block';
+  $(m+'_tabel').closest('.kartu').scrollIntoView({behavior:'smooth'});
+}
+
+function batalEdit(m){
+  editId[m] = null;
+  $(m+'_batal').style.display = 'none';
+  MODUL[m].fields.forEach(f => { const el=$(f.i); el.tagName==='SELECT' ? el.selectedIndex=0 : el.value=''; });
+  isiTanggalDefault();
+}
+
+function hapusRec(m, id){
+  if(!confirm('Hapus data ini?')) return;
+  const cfg = MODUL[m];
+  taruh(cfg.key, muat(cfg.key).filter(r => r.id !== id));
+  render(m);
+}
+
+function render(m){
+  const cfg = MODUL[m];
+  let data = muat(cfg.key);
+  const q = ($(m+'_cari')?.value || '').toLowerCase();
+  if(q) data = data.filter(r => cfg.cari.some(k => (r[k]||'').toLowerCase().includes(q)));
+
+  let html = '<tr><th>No</th>' + cfg.fields.map(f=>'<th>'+f.l+'</th>').join('') + (cfg.ekstraTh||'') + '<th>Aksi</th></tr>';
+  if(!data.length){
+    html += `<tr><td class="kosong" colspan="${cfg.fields.length + 3}">Belum ada data</td></tr>`;
+  } else {
+    data.forEach((r,i) => {
+      html += '<tr><td>'+(i+1)+'</td>';
+      for(const f of cfg.fields){
+        let v = r[f.k] || '';
+        if(f.tgl) { html += '<td>'+fmtTgl(v)+'</td>'; continue; }
+        if(cfg.badge && cfg.badge[f.k] && v){ html += `<td><span class="badge ${cfg.badge[f.k](v)}">${esc(v)}</span></td>`; continue; }
+        html += '<td>'+esc(v || '-')+'</td>';
+      }
+      if(cfg.ekstraTd) html += cfg.ekstraTd(r);
+      html += `<td style="white-space:nowrap">
+        <button class="btn-kecil btn-edit" onclick="editRec('${m}','${r.id}')">✏️</button>
+        <button class="btn-kecil btn-hapus" onclick="hapusRec('${m}','${r.id}')">🗑️</button></td></tr>`;
+    });
+  }
+  $(m+'_tabel').innerHTML = html;
+}
+
+/* ====================== IBS (multi-input per seksi) ====================== */
+const IBS = {
+  op: {key:'ibs_operasi',   label:'Jenis Operasi',        fields:[{i:'op_nama',k:'nama',l:'Nama Pasien'},{i:'op_norm',k:'norm',l:'No. RM'},{i:'op_operasi',k:'operasi',l:'Nama Operasi'}]},
+  cf: {key:'ibs_cekfloor',  label:'Cek Floor Stok',       fields:[{i:'cf_barang',k:'barang',l:'Nama Barang'},{i:'cf_asal',k:'asal',l:'Jumlah Asal'},{i:'cf_asli',k:'asli',l:'Jumlah Asli'},{i:'cf_total',k:'total',l:'Total'}]},
+  pf: {key:'ibs_pakaifloor',label:'Pemakaian Floorstock', fields:[{i:'pf_nama',k:'nama',l:'Nama Pasien'},{i:'pf_norm',k:'norm',l:'No. RM'},{i:'pf_barang',k:'barang',l:'Nama Barang'},{i:'pf_jumlah',k:'jumlah',l:'Jumlah'},{i:'pf_status',k:'status',l:'Status'}],
+       badge:{status: v => v === 'Sudah diganti' ? 'b-hijau' : 'b-oranye'}},
+  po: {key:'ibs_paket',     label:'Input Paket Obat',     fields:[{i:'po_nama',k:'nama',l:'Nama Pasien'},{i:'po_norm',k:'norm',l:'No. RM'},{i:'po_paket',k:'paket',l:'Nama Paket Obat'},{i:'po_jumlah',k:'jumlah',l:'Jumlah'}]},
+  nk: {key:'ibs_narkotik',  label:'Resep Narkotik',       fields:[{i:'nk_nama',k:'nama',l:'Nama Pasien'},{i:'nk_norm',k:'norm',l:'No. RM'},{i:'nk_obat',k:'obat',l:'Nama Obat'},{i:'nk_jumlah',k:'jumlah',l:'Jumlah'}]},
+  ha: {key:'ibs_highalert', label:'Form High Alert',      fields:[{i:'ha_nama',k:'nama',l:'Nama Pasien'},{i:'ha_norm',k:'norm',l:'No. RM'},{i:'ha_obat',k:'obat',l:'Obat High Alert'},{i:'ha_jumlah',k:'jumlah',l:'Jumlah'}]},
+  dc: {key:'ibs_sdm',       label:'SDM Double Check',     fields:[{i:'dc_nama',k:'nama',l:'Nama Petugas'},{i:'dc_ket',k:'ket',l:'Keterangan'}]}
+};
+
+function cfTotal(){
+  const a = parseFloat($('cf_asal').value) || 0;
+  const b = parseFloat($('cf_asli').value) || 0;
+  $('cf_total').value = a + b;
+}
+
+function simpanIBS(s){
+  const tgl = $('ibs_tanggal').value;
+  if(!tgl){ alert('Pilih tanggal laporan dulu.'); $('ibs_tanggal').focus(); return; }
+  const cfg = IBS[s];
+  const rec = {id:uid(), tanggal:tgl};
+  let adaIsi = false;
+  for(const f of cfg.fields){
+    rec[f.k] = $(f.i).value.trim();
+    if(rec[f.k]) adaIsi = true;
+  }
+  if(!adaIsi){ alert('Isi minimal satu kolom.'); return; }
+  const data = muat(cfg.key);
+  data.push(rec);
+  taruh(cfg.key, data);
+  cfg.fields.forEach(f => { const el=$(f.i); el.tagName==='SELECT' ? el.selectedIndex=0 : el.value=''; });
+  renderIBSSeksi(s);
+}
+
+function hapusIBS(s, id){
+  if(!confirm('Hapus baris ini?')) return;
+  taruh(IBS[s].key, muat(IBS[s].key).filter(r => r.id !== id));
+  renderIBSSeksi(s);
+}
+
+function renderIBSSeksi(s){
+  const cfg = IBS[s];
+  const tgl = $('ibs_tanggal').value;
+  const data = muat(cfg.key).filter(r => r.tanggal === tgl);
+  let html = '<tr><th>No</th>' + cfg.fields.map(f=>'<th>'+f.l+'</th>').join('') + '<th>Aksi</th></tr>';
+  if(!data.length){
+    html += `<tr><td class="kosong" colspan="${cfg.fields.length + 2}">Belum ada data untuk tanggal ini</td></tr>`;
+  } else {
+    data.forEach((r,i) => {
+      html += '<tr><td>'+(i+1)+'</td>';
+      for(const f of cfg.fields){
+        const v = r[f.k] || '';
+        if(cfg.badge && cfg.badge[f.k] && v){ html += `<td><span class="badge ${cfg.badge[f.k](v)}">${esc(v)}</span></td>`; }
+        else html += '<td>'+esc(v || '-')+'</td>';
+      }
+      html += `<td><button class="btn-kecil btn-hapus" onclick="hapusIBS('${s}','${r.id}')">🗑️</button></td></tr>`;
+    });
+  }
+  $(s+'_tabel').innerHTML = html;
+}
+
+function renderIBS(){ Object.keys(IBS).forEach(renderIBSSeksi); }
+
+/* ====================== EXPORT EXCEL (.xlsx tanpa library) ====================== */
+function crc32(buf){
+  if(!crc32.tabel){
+    crc32.tabel = [];
+    for(let n=0; n<256; n++){
+      let c = n;
+      for(let k=0; k<8; k++) c = (c & 1) ? (0xEDB88320 ^ (c >>> 1)) : (c >>> 1);
+      crc32.tabel[n] = c >>> 0;
+    }
+  }
+  let crc = 0xFFFFFFFF;
+  for(let i=0; i<buf.length; i++) crc = (crc >>> 8) ^ crc32.tabel[(crc ^ buf[i]) & 0xFF];
+  return (crc ^ 0xFFFFFFFF) >>> 0;
+}
+
+function buatZip(files){ // files: [{nama, isi(string)}] -> Blob zip (metode store)
+  const enc = new TextEncoder();
+  const u16 = v => [v & 255, (v >> 8) & 255];
+  const u32 = v => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
+  const bagian = [], pusat = [];
+  let offset = 0;
+  for(const f of files){
+    const nama = enc.encode(f.nama), data = enc.encode(f.isi);
+    const crc = crc32(data);
+    const kepala = new Uint8Array([0x50,0x4B,3,4, ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nama.length), ...u16(0)]);
+    bagian.push(kepala, nama, data);
+    pusat.push({nama, crc, ukuran: data.length, offset});
+    offset += kepala.length + nama.length + data.length;
+  }
+  let ukuranCD = 0;
+  for(const e of pusat){
+    const h = new Uint8Array([0x50,0x4B,1,2, ...u16(20), ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0),
+      ...u32(e.crc), ...u32(e.ukuran), ...u32(e.ukuran), ...u16(e.nama.length), ...u16(0), ...u16(0),
+      ...u16(0), ...u16(0), ...u32(0), ...u32(e.offset)]);
+    bagian.push(h, e.nama);
+    ukuranCD += h.length + e.nama.length;
+  }
+  bagian.push(new Uint8Array([0x50,0x4B,5,6, ...u16(0), ...u16(0), ...u16(pusat.length), ...u16(pusat.length),
+    ...u32(ukuranCD), ...u32(offset), ...u16(0)]));
+  return new Blob(bagian, {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+}
+
+const xmlEsc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+// angka murni jadi sel numerik; nilai berawalan 0 (misal No. RM "0123") tetap teks agar 0 tidak hilang
+const selAngka = s => /^-?\d+(\.\d+)?$/.test(s) && !(s.length > 1 && s[0] === '0');
+
+function sheetXML(rows){
+  let xml = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<worksheet xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main"><sheetData>';
+  rows.forEach((row, ri) => {
+    xml += `<row r="${ri+1}">`;
+    for(const v of row){
+      const s = String(v ?? '');
+      if(s === '') xml += '<c/>';
+      else if(selAngka(s)) xml += `<c><v>${s}</v></c>`;
+      else xml += `<c t="inlineStr"><is><t xml:space="preserve">${xmlEsc(s)}</t></is></c>`;
+    }
+    xml += '</row>';
+  });
+  return xml + '</sheetData></worksheet>';
+}
+
+function unduhExcel(namaFile, sheets){ // sheets: [{nama, rows:[[...]]}]
+  const bersih = n => (String(n).replace(/[\\\/\?\*\[\]:]/g, ' ').trim().slice(0,31)) || 'Sheet';
+  const dipakai = new Set();
+  const namaSheet = sheets.map(s => {
+    let n = bersih(s.nama), dasar = n, i = 2;
+    while(dipakai.has(n)) n = (dasar.slice(0, 28) + ' ' + i++);
+    dipakai.add(n);
+    return n;
+  });
+  const files = [
+    {nama:'[Content_Types].xml', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/>' +
+      '<Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/xl/workbook.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml"/>' +
+      sheets.map((_,i) => `<Override PartName="/xl/worksheets/sheet${i+1}.xml" ContentType="application/vnd.openxmlformats-officedocument.spreadsheetml.worksheet+xml"/>`).join('') +
+      '</Types>'},
+    {nama:'_rels/.rels', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      '<Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="xl/workbook.xml"/>' +
+      '</Relationships>'},
+    {nama:'xl/workbook.xml', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<workbook xmlns="http://schemas.openxmlformats.org/spreadsheetml/2006/main" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"><sheets>' +
+      sheets.map((_,i) => `<sheet name="${xmlEsc(namaSheet[i])}" sheetId="${i+1}" r:id="rId${i+1}"/>`).join('') +
+      '</sheets></workbook>'},
+    {nama:'xl/_rels/workbook.xml.rels', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+      '<Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships">' +
+      sheets.map((_,i) => `<Relationship Id="rId${i+1}" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/worksheet" Target="worksheets/sheet${i+1}.xml"/>`).join('') +
+      '</Relationships>'},
+    ...sheets.map((s,i) => ({nama:`xl/worksheets/sheet${i+1}.xml`, isi: sheetXML(s.rows)}))
+  ];
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(buatZip(files));
+  a.download = namaFile;
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+const LABEL_MODUL = {ab:'Form Antibiotik', erm:'Monitoring E-RM', rm:'RM Status Manual', sc:'Screening Harian'};
+
+function lebih3HariTeks(r){
+  if(r.form && r.form.startsWith('Sudah')) return '-';
+  if(!r.tanggal) return '-';
+  const selisih = Math.floor((new Date(hariIni()) - new Date(r.tanggal)) / 86400000);
+  return selisih > 3 ? `YA (${selisih} hari)` : `Tidak (${selisih} hari)`;
+}
+
+function exportExcel(m){
+  const cfg = MODUL[m];
+  const data = muat(cfg.key);
+  if(!data.length){ alert('Belum ada data untuk di-export.'); return; }
+  const kepala = cfg.fields.map(f => f.l);
+  if(m === 'ab') kepala.push('Lebih 3 Hari');
+  const rows = [kepala];
+  data.forEach(r => {
+    const baris = cfg.fields.map(f => f.tgl ? fmtTgl(r[f.k]) : (r[f.k] || ''));
+    if(m === 'ab') baris.push(lebih3HariTeks(r));
+    rows.push(baris);
+  });
+  unduhExcel(cfg.key + '_' + hariIni() + '.xlsx', [{nama: LABEL_MODUL[m], rows}]);
+}
+
+function exportIBS(){
+  const tgl = $('ibs_tanggal').value;
+  if(!tgl){ alert('Pilih tanggal laporan dulu.'); return; }
+  let ada = false;
+  const sheets = Object.keys(IBS).map(s => {
+    const cfg = IBS[s];
+    const data = muat(cfg.key).filter(r => r.tanggal === tgl);
+    if(data.length) ada = true;
+    const rows = [['LAPORAN JAGA IBS - ' + fmtTgl(tgl)], [cfg.label], cfg.fields.map(f => f.l)];
+    data.forEach(r => rows.push(cfg.fields.map(f => r[f.k] || '')));
+    return {nama: cfg.label, rows};
+  });
+  if(!ada){ alert('Belum ada data untuk tanggal ini.'); return; }
+  unduhExcel('laporan_jaga_ibs_' + tgl + '.xlsx', sheets);
+}
+
+/* ====================== BACKUP / RESTORE ====================== */
+function backupSemua(){
+  const semua = {};
+  SEMUA_KUNCI.forEach(k => { const v = muat(k); if(v.length) semua['monfar_'+k] = v; });
+  const blob = new Blob([JSON.stringify(semua, null, 2)], {type:'application/json'});
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'backup_monitoring_farmasi_' + hariIni() + '.json';
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+
+function restoreSemua(input){
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      const semua = JSON.parse(e.target.result);
+      const kunci = Object.keys(semua).filter(k => k.startsWith('monfar_'));
+      if(!kunci.length){ alert('File backup tidak valid.'); return; }
+      if(!confirm('Restore akan MENGGANTI semua data saat ini dengan isi file backup. Lanjutkan?')) return;
+      kunci.forEach(k => taruh(k.replace('monfar_',''), semua[k]));
+      alert('Restore berhasil.');
+      semuaRender();
+    }catch(err){ alert('Gagal membaca file: ' + err.message); }
+  };
+  reader.readAsText(file);
+  input.value = '';
+}
+
+/* ====================== INIT ====================== */
+function isiTanggalDefault(){
+  ['ab_tanggal','erm_tglmasuk','rm_tglmasuk','sc_tanggal'].forEach(id => { if(!$(id).value) $(id).value = hariIni(); });
+}
+function ermToggle(){
+  const sudah = $('erm_status').value === 'Sudah';
+  if(sudah && !$('erm_tglisi').value) $('erm_tglisi').value = hariIni();
+}
+function semuaRender(){ Object.keys(MODUL).forEach(render); renderIBS(); }
+
+$('ibs_tanggal').value = hariIni();
+isiTanggalDefault();
+(async function(){
+  if(location.protocol !== 'file:'){
+    try{
+      const res = await fetch('api/data', {cache:'no-store'});
+      if(res.ok) CACHE = await res.json();
+    }catch(e){ /* tidak ada server API -> tetap pakai localStorage */ }
+  }
+  infoMode();
+  // tawarkan migrasi data lama dari browser ke server saat server masih kosong
+  if(CACHE && Object.keys(CACHE).every(k => !(CACHE[k]||[]).length)){
+    const adaLokal = SEMUA_KUNCI.some(k => { try{ return JSON.parse(localStorage.getItem('monfar_'+k)||'[]').length; }catch(e){ return false; } });
+    if(adaLokal && confirm('Ditemukan data lama tersimpan di browser ini. Pindahkan ke server agar bisa diakses dari perangkat lain?')){
+      SEMUA_KUNCI.forEach(k => { try{ const v = JSON.parse(localStorage.getItem('monfar_'+k)||'[]'); if(v.length) taruh(k, v); }catch(e){} });
+    }
+  }
+  semuaRender();
+})();
+</script>
+</body>
+</html>

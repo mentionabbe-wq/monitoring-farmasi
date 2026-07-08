@@ -1,0 +1,44 @@
+name: monitoring-farmasi
+services:
+  app:
+    image: ghcr.io/mentionabbe-wq/monitoring-farmasi:latest
+    container_name: monitoring-farmasi
+    environment:
+      - PORT=8080
+      - DATA_DIR=/data
+    ports:
+      - "8087:8080"
+    volumes:
+      - /DATA/AppData/monitoring-farmasi/data:/data
+    restart: unless-stopped
+    x-casaos:
+      volumes:
+        - container: /data
+          description:
+            en_us: Folder penyimpanan database (monfar-db.json)
+      ports:
+        - container: "8080"
+          description:
+            en_us: Port web aplikasi
+
+x-casaos:
+  architectures:
+    - amd64
+    - arm64
+  main: app
+  author: diana
+  developer: diana
+  category: Utilities
+  icon: https://cdn.jsdelivr.net/gh/selfhst/icons/png/health-checks.png
+  title:
+    en_us: Monitoring Farmasi
+  tagline:
+    en_us: Monitoring farmasi RS - antibiotik, E-RM, screening, laporan jaga IBS
+  description:
+    en_us: >-
+      Aplikasi input dan monitoring farmasi rumah sakit: Form Antibiotik,
+      Monitoring E-RM, RM Status Manual, Screening Harian, dan Laporan Jaga IBS.
+      Data tersimpan terpusat di server sehingga bisa diakses dari banyak perangkat.
+  port_map: "8087"
+  scheme: http
+  index: /
