@@ -207,6 +207,7 @@
       <button class="btn btn-simpan" onclick="simpan('rm')">💾 Simpan</button>
       <button class="btn btn-batal" id="rm_batal" style="display:none" onclick="batalEdit('rm')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('rm')">📊 Export Excel</button>
+      <a class="btn btn-unduh" id="dl_kop" href="form/Kartu-Obat-Pasien-KOP.docx" download>📄 Download KOP (Word)</a>
     </div>
     <div class="cari" style="margin-top:12px"><input type="text" id="rm_cari" placeholder="🔍 Cari nama / No. RM..." oninput="render('rm')"></div>
     <div class="tabel-wrap"><table id="rm_tabel"></table></div>
@@ -882,6 +883,7 @@ isiTanggalDefault();
 if(location.protocol === 'file:'){
   $('dl_ab').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Formulir-Antibiotik.docx';
   $('dl_ha').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Formulir-High-Alert-PKPO.docx';
+  $('dl_kop').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Kartu-Obat-Pasien-KOP.docx';
 }
 (async function(){
   if(location.protocol !== 'file:'){
