@@ -65,7 +65,11 @@
   .b-abu{background:#eceff1; color:#546e7a;}
 
   .cari{margin-bottom:10px; display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
-  .cari input{padding:8px 12px; border:1px solid var(--garis); border-radius:6px; min-width:230px;}
+  .cari input[type=text]{padding:8px 12px; border:1px solid var(--garis); border-radius:6px; min-width:230px;}
+  .cari input[type=date]{padding:7px 8px; border:1px solid var(--garis); border-radius:6px;}
+  .cari .lbl{font-size:12px; font-weight:600; color:#546e7a;}
+  .paging{display:flex; gap:10px; align-items:center; justify-content:center; margin-top:10px; font-size:13px; color:#546e7a;}
+  .paging button[disabled]{opacity:.4; cursor:default;}
 
   .link-ha{font-size:13px; font-weight:600; color:var(--biru); text-decoration:underline; cursor:pointer; margin-left:10px; white-space:nowrap;}
   .modal-bg{position:fixed; inset:0; background:rgba(0,0,0,.55); display:none; z-index:100; align-items:flex-start; justify-content:center; overflow:auto; padding:30px 12px;}
@@ -82,7 +86,7 @@
   .info{font-size:12px; color:#78909c; margin-top:6px;}
 
   @media print{
-    header, nav, .aksi, .cari, .btn-kecil, .no-print, .modal-bg, .link-ha, th:last-child, td:last-child{display:none !important;}
+    header, nav, .aksi, .cari, .btn-kecil, .no-print, .modal-bg, .link-ha, .paging, th:last-child, td:last-child{display:none !important;}
     body{background:#fff;}
     .kartu{box-shadow:none; border:1px solid #999; page-break-inside:avoid;}
     .tab{display:none;}
@@ -153,8 +157,16 @@
       <a class="btn btn-unduh" id="dl_ab" href="form/Formulir-Antibiotik.docx" download>📄 Download Formulir (Word)</a>
     </div>
     <div id="ab_stat" style="margin-top:14px"></div>
-    <div class="cari" style="margin-top:12px"><input type="text" id="ab_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="render('ab')"></div>
+    <div class="cari" style="margin-top:12px">
+      <input type="text" id="ab_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="ubahFilter('ab')">
+      <span class="lbl">Tanggal:</span>
+      <input type="date" id="ab_f1" onchange="ubahFilter('ab')">
+      <span class="lbl">s/d</span>
+      <input type="date" id="ab_f2" onchange="ubahFilter('ab')">
+      <button class="btn-kecil btn-hapus" onclick="resetFilter('ab')">✕ Reset</button>
+    </div>
     <div class="tabel-wrap"><table id="ab_tabel"></table></div>
+    <div class="paging" id="ab_hal"></div>
   </div>
 </section>
 
@@ -191,8 +203,16 @@
       <button class="btn btn-csv" onclick="exportExcel('mr')">📊 Export Excel</button>
       <a class="btn btn-unduh" id="dl_kop" href="form/Kartu-Obat-Pasien-KOP.docx" download>📄 Download KOP (Word)</a>
     </div>
-    <div class="cari" style="margin-top:12px"><input type="text" id="mr_cari" placeholder="🔍 Cari nama / No. RM / ruangan / petugas..." oninput="render('mr')"></div>
+    <div class="cari" style="margin-top:12px">
+      <input type="text" id="mr_cari" placeholder="🔍 Cari nama / No. RM / ruangan / petugas..." oninput="ubahFilter('mr')">
+      <span class="lbl">Tgl masuk:</span>
+      <input type="date" id="mr_f1" onchange="ubahFilter('mr')">
+      <span class="lbl">s/d</span>
+      <input type="date" id="mr_f2" onchange="ubahFilter('mr')">
+      <button class="btn-kecil btn-hapus" onclick="resetFilter('mr')">✕ Reset</button>
+    </div>
     <div class="tabel-wrap"><table id="mr_tabel"></table></div>
+    <div class="paging" id="mr_hal"></div>
   </div>
   <datalist id="dl_ruangan"></datalist>
   <datalist id="dl_petugas"></datalist>
@@ -213,8 +233,16 @@
       <button class="btn btn-batal" id="sc_batal" style="display:none" onclick="batalEdit('sc')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('sc')">📊 Export Excel</button>
     </div>
-    <div class="cari" style="margin-top:12px"><input type="text" id="sc_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="render('sc')"></div>
+    <div class="cari" style="margin-top:12px">
+      <input type="text" id="sc_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="ubahFilter('sc')">
+      <span class="lbl">Tanggal:</span>
+      <input type="date" id="sc_f1" onchange="ubahFilter('sc')">
+      <span class="lbl">s/d</span>
+      <input type="date" id="sc_f2" onchange="ubahFilter('sc')">
+      <button class="btn-kecil btn-hapus" onclick="resetFilter('sc')">✕ Reset</button>
+    </div>
     <div class="tabel-wrap"><table id="sc_tabel"></table></div>
+    <div class="paging" id="sc_hal"></div>
   </div>
 </section>
 
@@ -261,8 +289,16 @@
       <button class="btn btn-csv" onclick="exportExcel('ha')">📊 Export Excel</button>
       <a class="btn btn-unduh" id="dl_ha" href="form/Formulir-High-Alert-PKPO.docx" download>📄 Download Formulir (Word)</a>
     </div>
-    <div class="cari" style="margin-top:12px"><input type="text" id="ha_cari" placeholder="🔍 Cari nama / No. RM / obat / ruangan..." oninput="render('ha')"></div>
+    <div class="cari" style="margin-top:12px">
+      <input type="text" id="ha_cari" placeholder="🔍 Cari nama / No. RM / obat / ruangan..." oninput="ubahFilter('ha')">
+      <span class="lbl">Tanggal:</span>
+      <input type="date" id="ha_f1" onchange="ubahFilter('ha')">
+      <span class="lbl">s/d</span>
+      <input type="date" id="ha_f2" onchange="ubahFilter('ha')">
+      <button class="btn-kecil btn-hapus" onclick="resetFilter('ha')">✕ Reset</button>
+    </div>
     <div class="tabel-wrap"><table id="ha_tabel"></table></div>
+    <div class="paging" id="ha_hal"></div>
   </div>
 </section>
 
@@ -507,6 +543,28 @@ const MODUL = {
 
 let editId = {}; // {ab: id|null, ...}
 
+/* ====================== FILTER TANGGAL & PAGINASI ====================== */
+const TGL_UTAMA = {ab:'tanggal', mr:'tglmasuk', sc:'tanggal', ha:'tanggal'}; // field tanggal per modul
+const PER_HAL = 10;
+const hal = {ab:1, mr:1, sc:1, ha:1};
+
+function saringTanggal(m, data){
+  const kTgl = TGL_UTAMA[m];
+  const f1 = $(m+'_f1')?.value, f2 = $(m+'_f2')?.value;
+  if(f1) data = data.filter(r => (r[kTgl]||'') >= f1);
+  if(f2) data = data.filter(r => (r[kTgl]||'') <= f2);
+  return data;
+}
+function saringCari(m, data){
+  const cfg = MODUL[m];
+  const q = ($(m+'_cari')?.value || '').toLowerCase();
+  if(q) data = data.filter(r => cfg.cari.some(k => (r[k]||'').toLowerCase().includes(q)));
+  return data;
+}
+function ubahFilter(m){ hal[m] = 1; render(m); }
+function ubahHal(m, arah){ hal[m] += arah; render(m); }
+function resetFilter(m){ $(m+'_f1').value = ''; $(m+'_f2').value = ''; $(m+'_cari').value = ''; ubahFilter(m); }
+
 function simpan(m){
   const cfg = MODUL[m];
   const rec = {};
@@ -557,16 +615,22 @@ function hapusRec(m, id){
 
 function render(m){
   const cfg = MODUL[m];
-  let data = muat(cfg.key);
-  const q = ($(m+'_cari')?.value || '').toLowerCase();
-  if(q) data = data.filter(r => cfg.cari.some(k => (r[k]||'').toLowerCase().includes(q)));
+  const semua = muat(cfg.key);
+  let data = saringTanggal(m, saringCari(m, semua));
+
+  const totalData = data.length;
+  const totalHal = Math.max(1, Math.ceil(totalData / PER_HAL));
+  if(hal[m] > totalHal) hal[m] = totalHal;
+  if(hal[m] < 1) hal[m] = 1;
+  const mulai = (hal[m] - 1) * PER_HAL;
+  data = data.slice(mulai, mulai + PER_HAL);
 
   let html = '<tr><th>No</th>' + cfg.fields.map(f=>'<th>'+f.l+'</th>').join('') + (cfg.ekstraTh||'') + '<th>Aksi</th></tr>';
-  if(!data.length){
-    html += `<tr><td class="kosong" colspan="${cfg.fields.length + 3}">Belum ada data</td></tr>`;
+  if(!totalData){
+    html += `<tr><td class="kosong" colspan="${cfg.fields.length + 3}">${semua.length ? 'Tidak ada data yang cocok dengan filter' : 'Belum ada data'}</td></tr>`;
   } else {
     data.forEach((r,i) => {
-      html += '<tr><td>'+(i+1)+'</td>';
+      html += '<tr><td>'+(mulai + i + 1)+'</td>';
       for(const f of cfg.fields){
         let v = r[f.k] || '';
         if(f.tgl) { html += '<td>'+fmtTgl(v)+'</td>'; continue; }
@@ -580,13 +644,18 @@ function render(m){
     });
   }
   $(m+'_tabel').innerHTML = html;
+  $(m+'_hal').innerHTML = totalData > PER_HAL
+    ? `<button class="btn-kecil btn-edit" ${hal[m] <= 1 ? 'disabled' : ''} onclick="ubahHal('${m}',-1)">&#8249; Sebelumnya</button>` +
+      `<span>Halaman ${hal[m]} dari ${totalHal} &#8212; ${totalData} data</span>` +
+      `<button class="btn-kecil btn-edit" ${hal[m] >= totalHal ? 'disabled' : ''} onclick="ubahHal('${m}',1)">Berikutnya &#8250;</button>`
+    : (totalData ? totalData + ' data' : '');
   if(m === 'ab') renderStatAB();
   if(m === 'mr') isiDatalist();
 }
 
 /* ====================== REKAP PENGUMPULAN FORM ANTIBIOTIK ====================== */
 function renderStatAB(){
-  const data = muat('antibiotik');
+  const data = saringTanggal('ab', muat('antibiotik')); // rekap mengikuti filter tanggal
   const perRuang = {};
   const totalC = {sudah_tepat:0, sudah_telat:0, belum_dalam:0, belum_lewat:0, takcatat:0, total:0};
   data.forEach(r => {
@@ -843,8 +912,8 @@ function lebih3HariTeks(r){
 
 function exportExcel(m){
   const cfg = MODUL[m];
-  const data = muat(cfg.key);
-  if(!data.length){ alert('Belum ada data untuk di-export.'); return; }
+  const data = saringTanggal(m, saringCari(m, muat(cfg.key))); // export mengikuti filter aktif
+  if(!data.length){ alert('Tidak ada data untuk di-export (periksa filter tanggal/pencarian).'); return; }
   const kepala = cfg.fields.map(f => f.l);
   if(m === 'ab') kepala.push('Lebih 3 Hari');
   const rows = [kepala];
