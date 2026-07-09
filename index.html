@@ -139,19 +139,21 @@
       <div class="field"><label>Dosis</label><input type="text" id="ab_dosis" placeholder="Contoh: 2x1 gr IV"></div>
       <div class="field"><label>Dokter</label><input type="text" id="ab_dokter" placeholder="Nama dokter (DPJP)"></div>
       <div class="field"><label>Pengisian Formulir</label>
-        <select id="ab_form">
+        <select id="ab_form" onchange="abToggle()">
           <option>Belum mengumpulkan form</option>
           <option>Sudah mengumpulkan form</option>
         </select>
       </div>
+      <div class="field"><label>Tanggal Pengumpulan Form</label><input type="date" id="ab_tglkumpul"></div>
     </div>
-    <div class="info">Kolom <b>"Lebih 3 Hari"</b> dihitung otomatis: jika form <b>belum</b> dikumpulkan dan sudah lewat 3 hari dari tanggal awal antibiotik.</div>
+    <div class="info">Kolom <b>"Lebih 3 Hari"</b> dihitung otomatis dari tanggal awal antibiotik: form yang <b>belum</b> dikumpulkan lebih dari 3 hari ditandai merah; form yang <b>sudah</b> dikumpulkan dinilai tepat waktu / terlambat berdasarkan tanggal pengumpulannya (terisi otomatis saat status diubah ke "Sudah").</div>
     <div class="aksi">
       <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
       <button class="btn btn-batal" id="ab_batal" style="display:none" onclick="batalEdit('ab')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('ab')">📊 Export Excel</button>
       <a class="btn btn-unduh" id="dl_ab" href="form/Formulir-Antibiotik.docx" download>📄 Download Formulir (Word)</a>
     </div>
+    <div id="ab_stat" style="margin-top:14px"></div>
     <div class="cari" style="margin-top:12px"><input type="text" id="ab_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="render('ab')"></div>
     <div class="tabel-wrap"><table id="ab_tabel"></table></div>
   </div>
@@ -421,6 +423,20 @@ function bukaTab(nama, btn){
   btn.classList.add('aktif');
 }
 
+/* ====================== KATEGORI PENGUMPULAN FORM ANTIBIOTIK ====================== */
+// sudah_tepat: dikumpulkan <= 3 hari | sudah_telat: dikumpulkan > 3 hari
+// belum_dalam: belum, masih <= 3 hari | belum_lewat: belum, sudah > 3 hari
+function hitungHariAB(r){
+  if(r.form && r.form.startsWith('Sudah')){
+    if(!r.tanggal || !r.tglkumpul) return {kat:'takcatat'};
+    const h = Math.floor((new Date(r.tglkumpul) - new Date(r.tanggal)) / 86400000);
+    return {kat: h > 3 ? 'sudah_telat' : 'sudah_tepat', hari:h};
+  }
+  if(!r.tanggal) return {kat:'takcatat'};
+  const h = Math.floor((new Date(hariIni()) - new Date(r.tanggal)) / 86400000);
+  return {kat: h > 3 ? 'belum_lewat' : 'belum_dalam', hari:h};
+}
+
 /* ====================== KONFIGURASI MODUL UTAMA ====================== */
 /* tiap modul: key penyimpanan, daftar field {id input, key data, label}, kolom pencarian */
 const MODUL = {
@@ -435,17 +451,20 @@ const MODUL = {
       {i:'ab_antibiotik', k:'antibiotik', l:'Nama Antibiotik'},
       {i:'ab_dosis', k:'dosis', l:'Dosis'},
       {i:'ab_dokter', k:'dokter', l:'Dokter'},
-      {i:'ab_form', k:'form', l:'Pengisian Formulir'}
+      {i:'ab_form', k:'form', l:'Pengisian Formulir'},
+      {i:'ab_tglkumpul', k:'tglkumpul', l:'Tgl Pengumpulan', tgl:true}
     ],
     cari:['nama','norm','ruangan','antibiotik','dokter'],
     ekstraTh:'<th>Lebih 3 Hari</th>',
     ekstraTd: r => {
-      if(r.form && r.form.startsWith('Sudah')) return '<td><span class="badge b-abu">-</span></td>';
-      if(!r.tanggal) return '<td>-</td>';
-      const selisih = Math.floor((new Date(hariIni()) - new Date(r.tanggal)) / 86400000);
-      return selisih > 3
-        ? `<td><span class="badge b-merah">YA (${selisih} hari)</span></td>`
-        : `<td><span class="badge b-hijau">Tidak (${selisih} hari)</span></td>`;
+      const x = hitungHariAB(r);
+      switch(x.kat){
+        case 'sudah_tepat': return `<td><span class="badge b-hijau">Tepat waktu (${x.hari} hari)</span></td>`;
+        case 'sudah_telat': return `<td><span class="badge b-oranye">Terlambat (${x.hari} hari)</span></td>`;
+        case 'belum_dalam': return `<td><span class="badge b-hijau">Tidak (${x.hari} hari)</span></td>`;
+        case 'belum_lewat': return `<td><span class="badge b-merah">YA (${x.hari} hari)</span></td>`;
+        default: return '<td><span class="badge b-abu">-</span></td>';
+      }
     },
     badge:{form: v => v && v.startsWith('Sudah') ? 'b-hijau' : 'b-merah'}
   },
@@ -590,6 +609,28 @@ function render(m){
     });
   }
   $(m+'_tabel').innerHTML = html;
+  if(m === 'ab') renderStatAB();
+}
+
+/* ====================== REKAP PENGUMPULAN FORM ANTIBIOTIK ====================== */
+function renderStatAB(){
+  const data = muat('antibiotik');
+  const c = {sudah_tepat:0, sudah_telat:0, belum_dalam:0, belum_lewat:0, takcatat:0};
+  data.forEach(r => c[hitungHariAB(r).kat]++);
+  const total = data.length;
+  const pct = n => total ? (n / total * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
+  const baris = [
+    ['<span class="badge b-hijau">Sudah dikumpulkan &#8804; 3 hari (tepat waktu)</span>', c.sudah_tepat],
+    ['<span class="badge b-oranye">Sudah dikumpulkan &gt; 3 hari (terlambat)</span>', c.sudah_telat],
+    ['<span class="badge b-abu">Belum mengumpulkan, masih &#8804; 3 hari</span>', c.belum_dalam],
+    ['<span class="badge b-merah">Belum mengumpulkan, lebih 3 hari</span>', c.belum_lewat]
+  ];
+  if(c.takcatat) baris.push(['<span class="badge b-abu">Tidak dapat dihitung (tanggal tidak lengkap)</span>', c.takcatat]);
+  let html = '<h3 style="margin-bottom:8px">📈 Rekap Pengumpulan Form</h3><div class="tabel-wrap"><table>' +
+    '<tr><th>Kategori</th><th style="text-align:center">Jumlah</th><th style="text-align:center">Persentase</th></tr>';
+  baris.forEach(b => { html += `<tr><td>${b[0]}</td><td style="text-align:center">${b[1]}</td><td style="text-align:center"><b>${pct(b[1])}</b></td></tr>`; });
+  html += `<tr><td><b>TOTAL</b></td><td style="text-align:center"><b>${total}</b></td><td style="text-align:center"><b>${total ? '100%' : '-'}</b></td></tr></table></div>`;
+  $('ab_stat').innerHTML = html;
 }
 
 /* ====================== DAFTAR OBAT HIGH ALERT (referensi PKPO) ====================== */
@@ -799,10 +840,14 @@ function unduhExcel(namaFile, sheets){ // sheets: [{nama, rows:[[...]]}]
 const LABEL_MODUL = {ab:'Form Antibiotik', erm:'Monitoring E-RM', rm:'RM Status Manual', sc:'Screening Harian', ha:'Obat High Alert'};
 
 function lebih3HariTeks(r){
-  if(r.form && r.form.startsWith('Sudah')) return '-';
-  if(!r.tanggal) return '-';
-  const selisih = Math.floor((new Date(hariIni()) - new Date(r.tanggal)) / 86400000);
-  return selisih > 3 ? `YA (${selisih} hari)` : `Tidak (${selisih} hari)`;
+  const x = hitungHariAB(r);
+  switch(x.kat){
+    case 'sudah_tepat': return `Tepat waktu (${x.hari} hari)`;
+    case 'sudah_telat': return `Terlambat (${x.hari} hari)`;
+    case 'belum_dalam': return `Tidak (${x.hari} hari)`;
+    case 'belum_lewat': return `YA (${x.hari} hari)`;
+    default: return '-';
+  }
 }
 
 function exportExcel(m){
@@ -874,6 +919,10 @@ function isiTanggalDefault(){
 function ermToggle(){
   const sudah = $('erm_status').value === 'Sudah';
   if(sudah && !$('erm_tglisi').value) $('erm_tglisi').value = hariIni();
+}
+function abToggle(){
+  const sudah = $('ab_form').value.startsWith('Sudah');
+  if(sudah && !$('ab_tglkumpul').value) $('ab_tglkumpul').value = hariIni();
 }
 function semuaRender(){ Object.keys(MODUL).forEach(render); renderIBS(); }
 
