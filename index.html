@@ -766,11 +766,11 @@ function renderStatAB(){
   let takcatat = 0;
   data.forEach(r => {
     const nama = (r.ruangan || '').trim() || '(tanpa ruangan)';
-    if(!perRuang[nama]) perRuang[nama] = {tepat:0, telat:0};
+    if(!perRuang[nama]) perRuang[nama] = [{tepat:0, telat:0}, {tepat:0, telat:0}, {tepat:0, telat:0}];
     for(let c = 0; c < 3; c++){
       const s = siklusInfo(r, c);
-      if(s === 'tepat'){ stat[c].tepat++; perRuang[nama].tepat++; }
-      else if(s === 'telat'){ stat[c].telat++; perRuang[nama].telat++; }
+      if(s === 'tepat'){ stat[c].tepat++; perRuang[nama][c].tepat++; }
+      else if(s === 'telat'){ stat[c].telat++; perRuang[nama][c].telat++; }
       else if(s === 'takcatat') takcatat++;
     }
   });
@@ -796,16 +796,26 @@ function renderStatAB(){
     `<td style="text-align:center"><span class="badge ${totTelat ? 'b-merah' : 'b-hijau'}"><b>${persen(totTelat, totAll)}</b></span></td></tr>`;
   html += '</table></div>';
 
-  // rincian per ruangan (gabungan 3 siklus)
-  const namaRuang = Object.keys(perRuang).filter(n => perRuang[n].tepat || perRuang[n].telat).sort((a,b) => a.localeCompare(b, 'id'));
+  // rincian per ruangan, dipecah per siklus
+  const SINGKAT = ['Siklus 1 (Awal)', 'Siklus 2 (Lanjutan 1)', 'Siklus 3 (Lanjutan 2)'];
+  const namaRuang = Object.keys(perRuang).filter(n => perRuang[n].some(g => g.tepat || g.telat)).sort((a,b) => a.localeCompare(b, 'id'));
   if(namaRuang.length){
-    html += '<h3 style="margin:14px 0 8px">🏢 Rincian per Asal Ruangan (gabungan 3 siklus)</h3><div class="tabel-wrap"><table>' +
-      '<tr><th>Asal Ruangan</th><th style="text-align:center">Tepat (&#8804; 3 hari)</th><th style="text-align:center">Terlambat (&gt; 3 hari)</th>' +
+    html += '<h3 style="margin:14px 0 8px">🏢 Rincian per Asal Ruangan per Siklus</h3><div class="tabel-wrap"><table>' +
+      '<tr><th>Asal Ruangan</th><th>Siklus</th><th style="text-align:center">Tepat (&#8804; 3 hari)</th><th style="text-align:center">Terlambat (&gt; 3 hari)</th>' +
       '<th style="text-align:center">Total</th><th style="text-align:center">% Terlambat</th></tr>';
     for(const nama of namaRuang){
-      const g = perRuang[nama], t = g.tepat + g.telat;
-      html += `<tr><td>${esc(nama)}</td><td style="text-align:center">${g.tepat}</td><td style="text-align:center">${g.telat}</td>` +
-        `<td style="text-align:center"><b>${t}</b></td><td style="text-align:center"><span class="badge ${g.telat ? 'b-merah' : 'b-hijau'}">${persen(g.telat, t)}</span></td></tr>`;
+      const arr = perRuang[nama];
+      let st = 0, sl = 0;
+      for(let c = 0; c < 3; c++){
+        const g = arr[c], t = g.tepat + g.telat;
+        st += g.tepat; sl += g.telat;
+        html += '<tr>' + (c === 0 ? `<td rowspan="4" style="vertical-align:middle"><b>${esc(nama)}</b></td>` : '') +
+          `<td>${SINGKAT[c]}</td><td style="text-align:center">${g.tepat}</td><td style="text-align:center">${g.telat}</td>` +
+          `<td style="text-align:center"><b>${t}</b></td><td style="text-align:center"><span class="badge ${g.telat ? 'b-merah' : 'b-hijau'}">${persen(g.telat, t)}</span></td></tr>`;
+      }
+      const tt = st + sl;
+      html += `<tr style="background:#eef4fb"><td><b>Total ruangan</b></td><td style="text-align:center"><b>${st}</b></td><td style="text-align:center"><b>${sl}</b></td>` +
+        `<td style="text-align:center"><b>${tt}</b></td><td style="text-align:center"><span class="badge ${sl ? 'b-merah' : 'b-hijau'}"><b>${persen(sl, tt)}</b></span></td></tr>`;
     }
     html += '</table></div>';
   }
