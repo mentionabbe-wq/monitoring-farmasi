@@ -693,42 +693,50 @@ function render(m){
 }
 
 /* ====================== REKAP PENGUMPULAN FORM ANTIBIOTIK ====================== */
+// Rekap hanya menghitung form yang SUDAH dikumpulkan (punya tanggal pengumpulan):
+// dibagi 2 -> dikumpulkan <= 3 hari (tepat waktu) vs > 3 hari (terlambat).
 function renderStatAB(){
   const data = saringTanggal('ab', muat('antibiotik')); // rekap mengikuti filter tanggal
+  let kurang = 0, lebih = 0, belum = 0, takcatat = 0;
   const perRuang = {};
-  const totalC = {sudah_tepat:0, sudah_telat:0, belum_dalam:0, belum_lewat:0, takcatat:0, total:0};
   data.forEach(r => {
-    const nama = (r.ruangan || '').trim() || '(tanpa ruangan)';
-    if(!perRuang[nama]) perRuang[nama] = {sudah_tepat:0, sudah_telat:0, belum_dalam:0, belum_lewat:0, takcatat:0, total:0};
     const kat = hitungHariAB(r).kat;
-    perRuang[nama][kat]++; perRuang[nama].total++;
-    totalC[kat]++; totalC.total++;
+    const nama = (r.ruangan || '').trim() || '(tanpa ruangan)';
+    if(!perRuang[nama]) perRuang[nama] = {kurang:0, lebih:0};
+    if(kat === 'sudah_tepat'){ kurang++; perRuang[nama].kurang++; }
+    else if(kat === 'sudah_telat'){ lebih++; perRuang[nama].lebih++; }
+    else if(kat === 'takcatat') takcatat++;
+    else belum++; // belum_dalam / belum_lewat = belum dikumpulkan
   });
-  const pctSel = g => {
-    const lewat = g.sudah_telat + g.belum_lewat;
-    const p = g.total ? (lewat / g.total * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
-    return `<span class="badge ${lewat ? 'b-merah' : 'b-hijau'}">${p}</span>`;
-  };
-  let html = '<h3 style="margin-bottom:8px">📈 Rekap Pengumpulan Form per Ruangan</h3><div class="tabel-wrap"><table>' +
-    '<tr><th>Asal Ruangan</th><th style="text-align:center">Sudah &#8804; 3 hari</th><th style="text-align:center">Sudah &gt; 3 hari</th>' +
-    '<th style="text-align:center">Belum &#8804; 3 hari</th><th style="text-align:center">Belum &gt; 3 hari</th>' +
-    '<th style="text-align:center">Total</th><th style="text-align:center">% Lebih 3 Hari</th></tr>';
-  const namaRuang = Object.keys(perRuang).sort((a,b) => a.localeCompare(b, 'id'));
-  if(!namaRuang.length){
-    html += '<tr><td class="kosong" colspan="7">Belum ada data</td></tr>';
-  } else {
+  const totalKumpul = kurang + lebih;
+  const pct = n => totalKumpul ? (n / totalKumpul * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
+
+  let html = '<h3 style="margin-bottom:8px">📈 Rekap Waktu Pengumpulan Form</h3><div class="tabel-wrap"><table>' +
+    '<tr><th>Waktu Pengumpulan</th><th style="text-align:center">Jumlah</th><th style="text-align:center">Persentase</th></tr>' +
+    `<tr><td><span class="badge b-hijau">Dikumpulkan &#8804; 3 hari (tepat waktu)</span></td><td style="text-align:center">${kurang}</td><td style="text-align:center"><b>${pct(kurang)}</b></td></tr>` +
+    `<tr><td><span class="badge b-merah">Dikumpulkan &gt; 3 hari (terlambat)</span></td><td style="text-align:center">${lebih}</td><td style="text-align:center"><b>${pct(lebih)}</b></td></tr>` +
+    `<tr><td><b>TOTAL FORM DIKUMPULKAN</b></td><td style="text-align:center"><b>${totalKumpul}</b></td><td style="text-align:center"><b>${totalKumpul ? '100%' : '-'}</b></td></tr>` +
+    '</table></div>';
+
+  // rincian per ruangan
+  const namaRuang = Object.keys(perRuang).filter(n => perRuang[n].kurang || perRuang[n].lebih).sort((a,b) => a.localeCompare(b, 'id'));
+  if(namaRuang.length){
+    html += '<h3 style="margin:14px 0 8px">🏢 Rincian per Asal Ruangan</h3><div class="tabel-wrap"><table>' +
+      '<tr><th>Asal Ruangan</th><th style="text-align:center">&#8804; 3 hari</th><th style="text-align:center">&gt; 3 hari</th>' +
+      '<th style="text-align:center">Total Dikumpulkan</th><th style="text-align:center">% Terlambat</th></tr>';
     for(const nama of namaRuang){
-      const g = perRuang[nama];
-      html += `<tr><td>${esc(nama)}</td><td style="text-align:center">${g.sudah_tepat}</td><td style="text-align:center">${g.sudah_telat}</td>` +
-        `<td style="text-align:center">${g.belum_dalam}</td><td style="text-align:center">${g.belum_lewat}</td>` +
-        `<td style="text-align:center"><b>${g.total}</b></td><td style="text-align:center">${pctSel(g)}</td></tr>`;
+      const g = perRuang[nama], t = g.kurang + g.lebih;
+      const p = t ? (g.lebih / t * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
+      html += `<tr><td>${esc(nama)}</td><td style="text-align:center">${g.kurang}</td><td style="text-align:center">${g.lebih}</td>` +
+        `<td style="text-align:center"><b>${t}</b></td><td style="text-align:center"><span class="badge ${g.lebih ? 'b-merah' : 'b-hijau'}">${p}</span></td></tr>`;
     }
-    html += `<tr><td><b>TOTAL</b></td><td style="text-align:center"><b>${totalC.sudah_tepat}</b></td><td style="text-align:center"><b>${totalC.sudah_telat}</b></td>` +
-      `<td style="text-align:center"><b>${totalC.belum_dalam}</b></td><td style="text-align:center"><b>${totalC.belum_lewat}</b></td>` +
-      `<td style="text-align:center"><b>${totalC.total}</b></td><td style="text-align:center">${pctSel(totalC)}</td></tr>`;
+    html += '</table></div>';
   }
-  html += '</table></div>';
-  if(totalC.takcatat) html += `<div class="info">${totalC.takcatat} data tidak ikut dihitung pada kolom kategori karena tanggalnya tidak lengkap (status "Sudah" tanpa tanggal pengumpulan).</div>`;
+
+  const ket = [];
+  if(belum) ket.push(`${belum} form belum dikumpulkan (belum masuk hitungan rekap)`);
+  if(takcatat) ket.push(`${takcatat} data berstatus "Sudah" tapi tanpa tanggal pengumpulan sehingga tidak bisa dihitung`);
+  if(ket.length) html += `<div class="info">Catatan: ${ket.join('; ')}.</div>`;
   $('ab_stat').innerHTML = html;
 }
 
