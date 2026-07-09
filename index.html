@@ -630,6 +630,31 @@ function renderStatAB(){
     '<tr><th>Kategori</th><th style="text-align:center">Jumlah</th><th style="text-align:center">Persentase</th></tr>';
   baris.forEach(b => { html += `<tr><td>${b[0]}</td><td style="text-align:center">${b[1]}</td><td style="text-align:center"><b>${pct(b[1])}</b></td></tr>`; });
   html += `<tr><td><b>TOTAL</b></td><td style="text-align:center"><b>${total}</b></td><td style="text-align:center"><b>${total ? '100%' : '-'}</b></td></tr></table></div>`;
+
+  // rekap per asal ruangan
+  const perRuang = {};
+  data.forEach(r => {
+    const nama = (r.ruangan || '').trim() || '(tanpa ruangan)';
+    if(!perRuang[nama]) perRuang[nama] = {sudah_tepat:0, sudah_telat:0, belum_dalam:0, belum_lewat:0, takcatat:0, total:0};
+    perRuang[nama][hitungHariAB(r).kat]++;
+    perRuang[nama].total++;
+  });
+  const namaRuang = Object.keys(perRuang).sort((a,b) => a.localeCompare(b, 'id'));
+  if(namaRuang.length){
+    html += '<h3 style="margin:14px 0 8px">🏢 Rekap per Asal Ruangan</h3><div class="tabel-wrap"><table>' +
+      '<tr><th>Asal Ruangan</th><th style="text-align:center">Sudah &#8804; 3 hari</th><th style="text-align:center">Sudah &gt; 3 hari</th>' +
+      '<th style="text-align:center">Belum &#8804; 3 hari</th><th style="text-align:center">Belum &gt; 3 hari</th>' +
+      '<th style="text-align:center">Total</th><th style="text-align:center">% Lebih 3 Hari</th></tr>';
+    for(const nama of namaRuang){
+      const g = perRuang[nama];
+      const lewat = g.sudah_telat + g.belum_lewat;
+      const p = g.total ? (lewat / g.total * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
+      html += `<tr><td>${esc(nama)}</td><td style="text-align:center">${g.sudah_tepat}</td><td style="text-align:center">${g.sudah_telat}</td>` +
+        `<td style="text-align:center">${g.belum_dalam}</td><td style="text-align:center">${g.belum_lewat}</td>` +
+        `<td style="text-align:center"><b>${g.total}</b></td><td style="text-align:center"><span class="badge ${lewat ? 'b-merah' : 'b-hijau'}">${p}</span></td></tr>`;
+    }
+    html += '</table></div>';
+  }
   $('ab_stat').innerHTML = html;
 }
 
