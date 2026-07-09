@@ -44,7 +44,7 @@
   .btn-simpan:hover{background:var(--biru-tua);}
   .btn-batal{background:#eceff1; color:#455a64;}
   .btn-csv{background:var(--hijau); color:#fff;}
-  a.btn-unduh{background:#455a64; color:#fff; text-decoration:none; display:inline-block;}
+  .btn-unduh{background:#455a64; color:#fff; text-decoration:none; display:inline-block;}
   .btn-print{background:#455a64; color:#fff;}
   .btn-kecil{padding:4px 10px; font-size:12px; border:none; border-radius:5px; cursor:pointer; font-weight:600;}
   .btn-edit{background:#fff3e0; color:var(--oranye);}
@@ -167,7 +167,7 @@
       <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
       <button class="btn btn-batal" id="ab_batal" style="display:none" onclick="batalEdit('ab')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('ab')">📊 Export Excel</button>
-      <a class="btn btn-unduh" id="dl_ab" href="form/Formulir-Antibiotik.docx" download>📄 Download Formulir (Word)</a>
+      <button class="btn btn-unduh" onclick="unduhFormWord('antibiotik')">📄 Download Formulir (Word)</button>
     </div>
     <div id="ab_stat" style="margin-top:14px"></div>
     <div class="cari" style="margin-top:12px">
@@ -214,7 +214,7 @@
       <button class="btn btn-simpan" onclick="simpan('mr')">💾 Simpan</button>
       <button class="btn btn-batal" id="mr_batal" style="display:none" onclick="batalEdit('mr')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('mr')">📊 Export Excel</button>
-      <a class="btn btn-unduh" id="dl_kop" href="form/Kartu-Obat-Pasien-KOP.docx" download>📄 Download KOP (Word)</a>
+      <button class="btn btn-unduh" onclick="unduhFormWord('kop')">📄 Download KOP (Word)</button>
     </div>
     <div class="cari" style="margin-top:12px">
       <input type="text" id="mr_cari" placeholder="🔍 Cari nama / No. RM / ruangan / petugas..." oninput="ubahFilter('mr')">
@@ -300,7 +300,7 @@
       <button class="btn btn-simpan" onclick="simpan('ha')">💾 Simpan</button>
       <button class="btn btn-batal" id="ha_batal" style="display:none" onclick="batalEdit('ha')">Batal Edit</button>
       <button class="btn btn-csv" onclick="exportExcel('ha')">📊 Export Excel</button>
-      <a class="btn btn-unduh" id="dl_ha" href="form/Formulir-High-Alert-PKPO.docx" download>📄 Download Formulir (Word)</a>
+      <button class="btn btn-unduh" onclick="unduhFormWord('highalert')">📄 Download Formulir (Word)</button>
     </div>
     <div class="cari" style="margin-top:12px">
       <input type="text" id="ha_cari" placeholder="🔍 Cari nama / No. RM / obat / ruangan..." oninput="ubahFilter('ha')">
@@ -784,6 +784,8 @@ function uploadLogo(input){
       c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
       const p = pengaturan();
       p.logo = c.toDataURL('image/png');
+      p.logoW = c.width;
+      p.logoH = c.height;
       taruh('pengaturan', [p]);
       terapkanPengaturan();
     };
@@ -809,6 +811,182 @@ function barisKop(){
   if(info) rows.push([info]);
   rows.push([]);
   return rows;
+}
+
+/* ====================== FORMULIR WORD (dibuat di browser, kop terisi otomatis) ====================== */
+const KOP_TPL = '<w:tbl><w:tblPr><w:tblW w:w="{LEBAR}" w:type="dxa"/><w:tblBorders><w:bottom w:val="single" w:sz="12" w:color="000000"/></w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="1800"/><w:gridCol w:w="{SISA}"/></w:tblGrid>' +
+  '<w:tr><w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr>{{LOGO}}</w:p></w:tc>' +
+  '<w:tc><w:tcPr><w:tcW w:w="{SISA}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>' +
+  '<w:p><w:pPr><w:spacing w:after="20"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">{{NAMA}}</w:t></w:r></w:p>' +
+  '<w:p><w:pPr><w:spacing w:after="20"/></w:pPr><w:r><w:t xml:space="preserve">Alamat : {{ALAMAT}}</w:t></w:r></w:p>' +
+  '<w:p><w:pPr><w:spacing w:after="20"/></w:pPr><w:r><w:t xml:space="preserve">Telp : {{TELP}}  Email : {{EMAIL}}</w:t></w:r></w:p>' +
+  '</w:tc></w:tr></w:tbl>';
+const kopTpl = lebar => KOP_TPL.replace(/\{LEBAR\}/g, lebar).replace(/\{SISA\}/g, lebar - 1800);
+
+const SEL_L = (w, teks, fill) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="${fill||'EAF1F8'}"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r>${fill==='D9E9F5'?'<w:rPr><w:b/></w:rPr>':''}<w:t xml:space="preserve">${teks}</w:t></w:r></w:p></w:tc>`;
+const SEL_H = (w, teks) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="D9E9F5"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t xml:space="preserve">${teks}</w:t></w:r></w:p></w:tc>`;
+const SEL_K = w => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:t xml:space="preserve"> </w:t></w:r></w:p></w:tc>`;
+const SEL_NO = (w, n) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>${n}</w:t></w:r></w:p></w:tc>`;
+const TBL = (lebar, grid, isi) => `<w:tbl><w:tblPr><w:tblW w:w="${lebar}" w:type="dxa"/><w:tblBorders><w:top w:val="single" w:sz="4"/><w:left w:val="single" w:sz="4"/><w:bottom w:val="single" w:sz="4"/><w:right w:val="single" w:sz="4"/><w:insideH w:val="single" w:sz="4"/><w:insideV w:val="single" w:sz="4"/></w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid>${grid.map(g=>`<w:gridCol w:w="${g}"/>`).join('')}</w:tblGrid>${isi}</w:tbl>`;
+const BR = (t, isi) => `<w:tr><w:trPr><w:trHeight w:val="${t}"/></w:trPr>${isi}</w:tr>`;
+const JUDUL = (teks, sub) => `<w:p><w:pPr><w:spacing w:before="160" w:after="20"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/></w:rPr><w:t>${teks}</w:t></w:r></w:p>` +
+  `<w:p><w:pPr><w:spacing w:after="160"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:i/><w:sz w:val="18"/></w:rPr><w:t>${sub}</w:t></w:r></w:p>`;
+const SUBBAB = teks => `<w:p><w:pPr><w:spacing w:before="160" w:after="60"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>${teks}</w:t></w:r></w:p>`;
+const PARA = (teks, sz) => `<w:p><w:pPr><w:spacing w:after="60"/></w:pPr><w:r>${sz?`<w:rPr><w:i/><w:sz w:val="${sz}"/></w:rPr>`:''}<w:t xml:space="preserve">${teks}</w:t></w:r></w:p>`;
+const TTD = (kiri, kanan, lebar) => `<w:tbl><w:tblPr><w:tblW w:w="${lebar}" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="${lebar/2}"/><w:gridCol w:w="${lebar/2}"/></w:tblGrid><w:tr>` +
+  [kiri, kanan].map(t => `<w:tc><w:tcPr><w:tcW w:w="${lebar/2}" w:type="dxa"/></w:tcPr>` + (t ? `<w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>${t}</w:t></w:r></w:p><w:p/><w:p/><w:p/><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>( ........................................................ )</w:t></w:r></w:p>` : '<w:p/>') + '</w:tc>').join('') + '</w:tr></w:tbl>';
+const SECT = potret => `<w:sectPr><w:pgSz w:w="${potret?11906:16838}" w:h="${potret?16838:11906}"${potret?'':' w:orient="landscape"'}/><w:pgMar w:top="1134" w:right="1134" w:bottom="1134" w:left="1134" w:header="708" w:footer="708" w:gutter="0"/></w:sectPr>`;
+
+function docAntibiotik(){
+  const b = 9638;
+  let x = kopTpl(b);
+  x += JUDUL('FORMULIR PENGGUNAAN ANTIBIOTIK', 'Program Pengendalian Resistensi Antimikroba (PPRA)');
+  x += SUBBAB('A. IDENTITAS PASIEN');
+  x += TBL(b, [2200,2619,2200,2619],
+    BR(360, SEL_L(2200,'Nama Pasien') + SEL_K(2619) + SEL_L(2200,'No. Rekam Medis') + SEL_K(2619)) +
+    BR(360, SEL_L(2200,'Tanggal Lahir / Umur') + SEL_K(2619) + SEL_L(2200,'Asal Ruangan') + SEL_K(2619)) +
+    BR(360, SEL_L(2200,'Dokter (DPJP)') + SEL_K(2619) + SEL_L(2200,'Tanggal Awal Antibiotik') + SEL_K(2619)) +
+    BR(360, SEL_L(2200,'Diagnosa') + `<w:tc><w:tcPr><w:tcW w:w="7438" w:type="dxa"/><w:gridSpan w:val="3"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:t xml:space="preserve"> </w:t></w:r></w:p></w:tc>`));
+  x += SUBBAB('B. DATA ANTIBIOTIK');
+  x += PARA('Jenis Antibiotik :      ☐ Empiris          ☐ Definitif          ☐ Profilaksis');
+  const g = [500,2600,1500,1100,1400,1269,1269];
+  let isi = BR(400, SEL_H(500,'No') + SEL_H(2600,'Nama Antibiotik') + SEL_H(1500,'Dosis') + SEL_H(1100,'Rute') + SEL_H(1400,'Frekuensi') + SEL_H(1269,'Tgl Mulai') + SEL_H(1269,'Tgl Stop'));
+  for(let n=1; n<=4; n++) isi += BR(440, SEL_NO(500,n) + g.slice(1).map(w=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr><w:p/></w:tc>`).join(''));
+  x += TBL(b, g, isi);
+  x += SUBBAB('C. STATUS PENGUMPULAN FORMULIR');
+  x += PARA('☐ Sudah mengumpulkan form          ☐ Belum mengumpulkan form');
+  x += PARA('Tanggal pengumpulan : .......................................................');
+  x += PARA('Catatan: formulir yang belum dikumpulkan lebih dari 3 hari sejak tanggal awal pemberian antibiotik akan ditandai pada sistem monitoring (MedTrack Pro).', 18);
+  x += TTD('Dokter (DPJP)', 'Apoteker / Petugas Farmasi', b);
+  return x + SECT(true);
+}
+
+function docHighAlert(){
+  const b = 9638;
+  let x = kopTpl(b);
+  x += JUDUL('FORMULIR MONITORING PENGGUNAAN OBAT HIGH ALERT', 'Standar PKPO — Pelayanan Kefarmasian dan Penggunaan Obat');
+  x += SUBBAB('A. IDENTITAS PASIEN');
+  x += TBL(b, [2200,2619,2200,2619],
+    BR(360, SEL_L(2200,'Tanggal') + SEL_K(2619) + SEL_L(2200,'Ruangan') + SEL_K(2619)) +
+    BR(360, SEL_L(2200,'Nama Pasien') + SEL_K(2619) + SEL_L(2200,'No. Rekam Medis') + SEL_K(2619)));
+  x += SUBBAB('B. DATA OBAT HIGH ALERT');
+  x += PARA('Nama Obat : ...............................................................................  Dosis / Rute : ......................................  Jumlah : ............');
+  x += PARA('Kategori :');
+  x += PARA('☐ Elektrolit Konsentrat      ☐ Narkotika      ☐ Insulin      ☐ Antikoagulan      ☐ Sitostatika');
+  x += PARA('☐ Sedasi      ☐ Agonis Adrenergik IV      ☐ Pelumpuh Otot      ☐ LASA / NORUM      ☐ Lainnya : ..................');
+  x += SUBBAB('C. CHECKLIST KEPATUHAN (PKPO)');
+  const item = ['Obat diberi label / stiker HIGH ALERT',
+    'Penyimpanan sesuai ketentuan (elektrolit konsentrat tidak disimpan di ruang perawatan)',
+    'Obat LASA / NORUM diberi label LASA dan tidak disimpan berdampingan',
+    'Dilakukan double check oleh 2 petugas sebelum pemberian',
+    'Verifikasi 5 BENAR (pasien, obat, dosis, rute, waktu pemberian)'];
+  let isi = BR(400, SEL_H(500,'No') + SEL_H(5538,'Item Verifikasi') + SEL_H(800,'Ya') + SEL_H(800,'Tidak') + SEL_H(2000,'Keterangan'));
+  item.forEach((t,i) => {
+    isi += BR(440, SEL_NO(500,i+1) +
+      `<w:tc><w:tcPr><w:tcW w:w="5538" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${t}</w:t></w:r></w:p></w:tc>` +
+      [800,800,2000].map(w=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr><w:p/></w:tc>`).join(''));
+  });
+  x += TBL(b, [500,5538,800,800,2000], isi);
+  x += SUBBAB('D. DOUBLE CHECK PETUGAS');
+  let dc = BR(400, `<w:tc><w:tcPr><w:tcW w:w="2000" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="D9E9F5"/><w:vAlign w:val="center"/></w:tcPr><w:p/></w:tc>` + SEL_H(3819,'Petugas 1') + SEL_H(3819,'Petugas 2'));
+  [['Nama Petugas',400],['Tanda Tangan',900],['Tanggal / Jam',400]].forEach(bar => {
+    dc += BR(bar[1], SEL_L(2000, bar[0]) + [3819,3819].map(w=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr><w:p/></w:tc>`).join(''));
+  });
+  x += TBL(b, [2000,3819,3819], dc);
+  x += SUBBAB('Keterangan : .........................................................................................................................................................');
+  x += PARA('....................................................................................................................................................................');
+  x += PARA('Catatan: daftar obat high alert mengacu pada daftar resmi yang ditetapkan rumah sakit. Hasil monitoring dicatat pada sistem MedTrack Pro menu High Alert.', 18);
+  return x + SECT(true);
+}
+
+function docKOP(){
+  const b = 14570;
+  let x = kopTpl(b);
+  x += `<w:p><w:pPr><w:spacing w:before="140" w:after="120"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="28"/></w:rPr><w:t>KARTU OBAT PASIEN (KOP)</w:t></w:r></w:p>`;
+  x += TBL(b, [2200,5085,2200,5085],
+    BR(340, SEL_L(2200,'Nama Pasien') + SEL_K(5085) + SEL_L(2200,'No. Rekam Medis') + SEL_K(5085)) +
+    BR(340, SEL_L(2200,'Tanggal Lahir / Umur') + SEL_K(5085) + SEL_L(2200,'Ruangan / Bed') + SEL_K(5085)) +
+    BR(340, SEL_L(2200,'Dokter (DPJP)') + SEL_K(5085) + SEL_L(2200,'Berat / Tinggi Badan') + SEL_K(5085)) +
+    BR(340, `<w:tc><w:tcPr><w:tcW w:w="2200" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EAF1F8"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:rPr><w:b/></w:rPr><w:t>Alergi Obat</w:t></w:r></w:p></w:tc>` +
+      `<w:tc><w:tcPr><w:tcW w:w="12370" w:type="dxa"/><w:gridSpan w:val="3"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:t xml:space="preserve"> </w:t></w:r></w:p></w:tc>`));
+  x += SUBBAB('DAFTAR OBAT DAN JADWAL PEMBERIAN');
+  const g = [500,3200,900,1200,1000,1110,1110,1110,1110,1110,1110,1110];
+  const vm = (w, teks) => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:vMerge w:val="restart"/><w:shd w:val="clear" w:color="auto" w:fill="D9E9F5"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>${teks}</w:t></w:r></w:p></w:tc>`;
+  const vl = w => `<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/><w:vMerge/><w:shd w:val="clear" w:color="auto" w:fill="D9E9F5"/></w:tcPr><w:p/></w:tc>`;
+  let isi = BR(340, vm(500,'No') + vm(3200,'Nama Obat dan Dosis') + vm(900,'Rute') + vm(1200,'Frekuensi') + vm(1000,'Jam') +
+    `<w:tc><w:tcPr><w:tcW w:w="7770" w:type="dxa"/><w:gridSpan w:val="7"/><w:shd w:val="clear" w:color="auto" w:fill="D9E9F5"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/></w:rPr><w:t>Tanggal dan Paraf Pemberian</w:t></w:r></w:p></w:tc>`);
+  isi += BR(340, vl(500) + vl(3200) + vl(900) + vl(1200) + vl(1000) +
+    Array(7).fill(0).map(() => `<w:tc><w:tcPr><w:tcW w:w="1110" w:type="dxa"/><w:shd w:val="clear" w:color="auto" w:fill="EAF1F8"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>....../......</w:t></w:r></w:p></w:tc>`).join(''));
+  for(let n=1; n<=8; n++) isi += BR(480, SEL_NO(500,n) + g.slice(1).map(w=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr><w:p/></w:tc>`).join(''));
+  x += TBL(b, g, isi);
+  x += PARA('Catatan: kolom tanggal diisi tanggal pemberian; petugas membubuhkan paraf setiap kali obat diberikan. Obat high alert wajib double check 2 petugas sebelum diberikan.', 18);
+  x += `<w:tbl><w:tblPr><w:tblW w:w="${b}" w:type="dxa"/><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="9732"/><w:gridCol w:w="4838"/></w:tblGrid><w:tr>` +
+    `<w:tc><w:tcPr><w:tcW w:w="9732" w:type="dxa"/></w:tcPr><w:p/></w:tc>` +
+    `<w:tc><w:tcPr><w:tcW w:w="4838" w:type="dxa"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>Apoteker / Petugas Farmasi</w:t></w:r></w:p><w:p/><w:p/><w:p/><w:p><w:pPr><w:jc w:val="center"/></w:pPr><w:r><w:t>( ........................................................ )</w:t></w:r></w:p></w:tc></w:tr></w:tbl>`;
+  return x + SECT(false);
+}
+
+const FORM_WORD = {
+  antibiotik: {file:'Formulir-Antibiotik.docx', buat: docAntibiotik},
+  highalert:  {file:'Formulir-High-Alert-PKPO.docx', buat: docHighAlert},
+  kop:        {file:'Kartu-Obat-Pasien-KOP.docx', buat: docKOP}
+};
+
+function unduhFormWord(jenis){
+  const t = FORM_WORD[jenis];
+  const p = pengaturan();
+  const nama = xmlEsc(p.nama || 'RUMAH SAKIT ...........................................................');
+  const alamat = xmlEsc(p.alamat || '...........................................................................................');
+  const telp = xmlEsc(p.telp || '......................................');
+  const email = xmlEsc(p.email || '......................................');
+  let logoRun = '<w:r><w:rPr><w:color w:val="808080"/></w:rPr><w:t>LOGO RS</w:t></w:r>';
+  let media = null;
+  if(p.logo && p.logo.indexOf('data:image/png') === 0){
+    const rasio = (p.logoW && p.logoH) ? (p.logoH / p.logoW) : 1;
+    let cx = 792000, cy = Math.round(792000 * rasio); // maks ~2,1 cm
+    if(cy > 792000){ cy = 792000; cx = Math.round(792000 / rasio); }
+    logoRun = '<w:r><w:drawing><wp:inline distT="0" distB="0" distL="0" distR="0" xmlns:wp="http://schemas.openxmlformats.org/drawingml/2006/wordprocessingDrawing">' +
+      `<wp:extent cx="${cx}" cy="${cy}"/><wp:docPr id="1" name="Logo RS"/>` +
+      '<a:graphic xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main"><a:graphicData uri="http://schemas.openxmlformats.org/drawingml/2006/picture">' +
+      '<pic:pic xmlns:pic="http://schemas.openxmlformats.org/drawingml/2006/picture"><pic:nvPicPr><pic:cNvPr id="1" name="logo.png"/><pic:cNvPicPr/></pic:nvPicPr>' +
+      '<pic:blipFill><a:blip r:embed="rId10" xmlns:r="http://schemas.openxmlformats.org/officeDocument/2006/relationships"/><a:stretch><a:fillRect/></a:stretch></pic:blipFill>' +
+      `<pic:spPr><a:xfrm><a:off x="0" y="0"/><a:ext cx="${cx}" cy="${cy}"/></a:xfrm><a:prstGeom prst="rect"><a:avLst/></a:prstGeom></pic:spPr></pic:pic></a:graphicData></a:graphic></wp:inline></w:drawing></w:r>`;
+    const bin = atob(p.logo.split(',')[1]);
+    media = new Uint8Array(bin.length);
+    for(let i = 0; i < bin.length; i++) media[i] = bin.charCodeAt(i);
+  }
+  const isiDoc = '<?xml version="1.0" encoding="UTF-8" standalone="yes"?>' +
+    '<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:body>' +
+    t.buat()
+      .replace('{{LOGO}}', () => logoRun)
+      .replace('{{NAMA}}', () => nama)
+      .replace('{{ALAMAT}}', () => alamat)
+      .replace('{{TELP}}', () => telp)
+      .replace('{{EMAIL}}', () => email) +
+    '</w:body></w:document>';
+  const files = [
+    {nama:'[Content_Types].xml', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Types xmlns="http://schemas.openxmlformats.org/package/2006/content-types">' +
+      (media ? '<Default Extension="png" ContentType="image/png"/>' : '') +
+      '<Default Extension="rels" ContentType="application/vnd.openxmlformats-package.relationships+xml"/><Default Extension="xml" ContentType="application/xml"/>' +
+      '<Override PartName="/word/document.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml"/>' +
+      '<Override PartName="/word/styles.xml" ContentType="application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml"/></Types>'},
+    {nama:'_rels/.rels', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/officeDocument" Target="word/document.xml"/></Relationships>'},
+    {nama:'word/_rels/document.xml.rels', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><Relationships xmlns="http://schemas.openxmlformats.org/package/2006/relationships"><Relationship Id="rId1" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/styles" Target="styles.xml"/>' +
+      (media ? '<Relationship Id="rId10" Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image" Target="media/logo.png"/>' : '') + '</Relationships>'},
+    {nama:'word/styles.xml', isi:
+      '<?xml version="1.0" encoding="UTF-8" standalone="yes"?><w:styles xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main"><w:docDefaults><w:rPrDefault><w:rPr><w:rFonts w:ascii="Arial" w:hAnsi="Arial" w:cs="Arial"/><w:sz w:val="20"/><w:szCs w:val="20"/></w:rPr></w:rPrDefault><w:pPrDefault><w:pPr><w:spacing w:after="60"/></w:pPr></w:pPrDefault></w:docDefaults></w:styles>'},
+    {nama:'word/document.xml', isi:isiDoc}
+  ];
+  if(media) files.push({nama:'word/media/logo.png', isi:media});
+  const blob = buatZip(files, 'application/vnd.openxmlformats-officedocument.wordprocessingml.document');
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = t.file;
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 /* ====================== DAFTAR OBAT HIGH ALERT (referensi PKPO) ====================== */
@@ -925,14 +1103,14 @@ function crc32(buf){
   return (crc ^ 0xFFFFFFFF) >>> 0;
 }
 
-function buatZip(files){ // files: [{nama, isi(string)}] -> Blob zip (metode store)
+function buatZip(files, mime){ // files: [{nama, isi(string|Uint8Array)}] -> Blob zip (metode store)
   const enc = new TextEncoder();
   const u16 = v => [v & 255, (v >> 8) & 255];
   const u32 = v => [v & 255, (v >> 8) & 255, (v >> 16) & 255, (v >>> 24) & 255];
   const bagian = [], pusat = [];
   let offset = 0;
   for(const f of files){
-    const nama = enc.encode(f.nama), data = enc.encode(f.isi);
+    const nama = enc.encode(f.nama), data = (typeof f.isi === 'string') ? enc.encode(f.isi) : f.isi;
     const crc = crc32(data);
     const kepala = new Uint8Array([0x50,0x4B,3,4, ...u16(20), ...u16(0x0800), ...u16(0), ...u16(0), ...u16(0),
       ...u32(crc), ...u32(data.length), ...u32(data.length), ...u16(nama.length), ...u16(0)]);
@@ -950,7 +1128,7 @@ function buatZip(files){ // files: [{nama, isi(string)}] -> Blob zip (metode sto
   }
   bagian.push(new Uint8Array([0x50,0x4B,5,6, ...u16(0), ...u16(0), ...u16(pusat.length), ...u16(pusat.length),
     ...u32(ukuranCD), ...u32(offset), ...u16(0)]));
-  return new Blob(bagian, {type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
+  return new Blob(bagian, {type: mime || 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'});
 }
 
 const xmlEsc = s => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1147,12 +1325,6 @@ function semuaRender(){ Object.keys(MODUL).forEach(render); renderIBS(); }
 
 $('ibs_tanggal').value = hariIni();
 isiTanggalDefault();
-// mode file:// tidak punya server -> arahkan download formulir ke GitHub
-if(location.protocol === 'file:'){
-  $('dl_ab').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Formulir-Antibiotik.docx';
-  $('dl_ha').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Formulir-High-Alert-PKPO.docx';
-  $('dl_kop').href = 'https://raw.githubusercontent.com/mentionabbe-wq/monitoring-farmasi/main/form/Kartu-Obat-Pasien-KOP.docx';
-}
 (async function(){
   if(location.protocol !== 'file:'){
     try{
