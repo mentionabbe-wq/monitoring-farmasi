@@ -746,50 +746,72 @@ function render(m){
 }
 
 /* ====================== REKAP PENGUMPULAN FORM ANTIBIOTIK ====================== */
-// Rekap hanya menghitung form yang SUDAH dikumpulkan (punya tanggal pengumpulan):
-// dibagi 2 -> dikumpulkan <= 3 hari (tepat waktu) vs > 3 hari (terlambat).
+// Ketepatan tiap siklus (c=0 Form Awal, c=1 Lanjutan ke-1, c=2 Lanjutan ke-2):
+// diukur dari jatuh tempo siklus (tanggal awal + 3*c). <=3 hari = tepat, >3 = terlambat.
+function siklusInfo(r, c){
+  const sudah = c === 0 ? (r.form && r.form.startsWith('Sudah')) : (c === 1 ? r.form1 === 'Sudah' : r.form2 === 'Sudah');
+  const tglIsi = c === 0 ? r.tglkumpul : (c === 1 ? r.tgl1 : r.tgl2);
+  if(!sudah) return 'belum';
+  if(!r.tanggal || !tglIsi) return 'takcatat';
+  const ref = new Date(r.tanggal); ref.setDate(ref.getDate() + 3 * c);
+  const h = Math.floor((new Date(tglIsi) - ref) / 86400000);
+  return h > 3 ? 'telat' : 'tepat';
+}
+
 function renderStatAB(){
   const data = tersaring('ab', muat('antibiotik')); // rekap mengikuti filter aktif (ruangan/tanggal/cari)
-  let kurang = 0, lebih = 0, belum = 0, takcatat = 0;
+  const NAMA = ['Siklus 1 — Form Awal', 'Siklus 2 — Form Lanjutan ke-1', 'Siklus 3 — Form Lanjutan ke-2'];
+  const stat = [{tepat:0, telat:0}, {tepat:0, telat:0}, {tepat:0, telat:0}];
   const perRuang = {};
+  let takcatat = 0;
   data.forEach(r => {
-    const kat = hitungHariAB(r).kat;
     const nama = (r.ruangan || '').trim() || '(tanpa ruangan)';
-    if(!perRuang[nama]) perRuang[nama] = {kurang:0, lebih:0};
-    if(kat === 'sudah_tepat'){ kurang++; perRuang[nama].kurang++; }
-    else if(kat === 'sudah_telat'){ lebih++; perRuang[nama].lebih++; }
-    else if(kat === 'takcatat') takcatat++;
-    else belum++; // belum_dalam / belum_lewat = belum dikumpulkan
+    if(!perRuang[nama]) perRuang[nama] = {tepat:0, telat:0};
+    for(let c = 0; c < 3; c++){
+      const s = siklusInfo(r, c);
+      if(s === 'tepat'){ stat[c].tepat++; perRuang[nama].tepat++; }
+      else if(s === 'telat'){ stat[c].telat++; perRuang[nama].telat++; }
+      else if(s === 'takcatat') takcatat++;
+    }
   });
-  const totalKumpul = kurang + lebih;
-  const pct = n => totalKumpul ? (n / totalKumpul * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
+  const persen = (n, t) => t ? (n / t * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
 
-  let html = '<h3 style="margin-bottom:8px">📈 Rekap Waktu Pengumpulan Form</h3><div class="tabel-wrap"><table>' +
-    '<tr><th>Waktu Pengumpulan</th><th style="text-align:center">Jumlah</th><th style="text-align:center">Persentase</th></tr>' +
-    `<tr><td><span class="badge b-hijau">Dikumpulkan &#8804; 3 hari (tepat waktu)</span></td><td style="text-align:center">${kurang}</td><td style="text-align:center"><b>${pct(kurang)}</b></td></tr>` +
-    `<tr><td><span class="badge b-merah">Dikumpulkan &gt; 3 hari (terlambat)</span></td><td style="text-align:center">${lebih}</td><td style="text-align:center"><b>${pct(lebih)}</b></td></tr>` +
-    `<tr><td><b>TOTAL FORM DIKUMPULKAN</b></td><td style="text-align:center"><b>${totalKumpul}</b></td><td style="text-align:center"><b>${totalKumpul ? '100%' : '-'}</b></td></tr>` +
-    '</table></div>';
+  // tabel per siklus
+  let html = '<h3 style="margin-bottom:8px">📈 Rekap Ketepatan Pengumpulan Form per Siklus</h3><div class="tabel-wrap"><table>' +
+    '<tr><th>Siklus</th><th style="text-align:center">Tepat waktu (&#8804; 3 hari)</th><th style="text-align:center">Terlambat (&gt; 3 hari)</th>' +
+    '<th style="text-align:center">Total Dikumpulkan</th><th style="text-align:center">% Tepat</th><th style="text-align:center">% Terlambat</th></tr>';
+  let totTepat = 0, totTelat = 0;
+  for(let c = 0; c < 3; c++){
+    const g = stat[c], t = g.tepat + g.telat;
+    totTepat += g.tepat; totTelat += g.telat;
+    html += `<tr><td>${NAMA[c]}</td><td style="text-align:center">${g.tepat}</td><td style="text-align:center">${g.telat}</td>` +
+      `<td style="text-align:center"><b>${t}</b></td>` +
+      `<td style="text-align:center"><span class="badge b-hijau">${persen(g.tepat, t)}</span></td>` +
+      `<td style="text-align:center"><span class="badge ${g.telat ? 'b-merah' : 'b-hijau'}">${persen(g.telat, t)}</span></td></tr>`;
+  }
+  const totAll = totTepat + totTelat;
+  html += `<tr><td><b>TOTAL (3 SIKLUS)</b></td><td style="text-align:center"><b>${totTepat}</b></td><td style="text-align:center"><b>${totTelat}</b></td>` +
+    `<td style="text-align:center"><b>${totAll}</b></td>` +
+    `<td style="text-align:center"><span class="badge b-hijau"><b>${persen(totTepat, totAll)}</b></span></td>` +
+    `<td style="text-align:center"><span class="badge ${totTelat ? 'b-merah' : 'b-hijau'}"><b>${persen(totTelat, totAll)}</b></span></td></tr>`;
+  html += '</table></div>';
 
-  // rincian per ruangan
-  const namaRuang = Object.keys(perRuang).filter(n => perRuang[n].kurang || perRuang[n].lebih).sort((a,b) => a.localeCompare(b, 'id'));
+  // rincian per ruangan (gabungan 3 siklus)
+  const namaRuang = Object.keys(perRuang).filter(n => perRuang[n].tepat || perRuang[n].telat).sort((a,b) => a.localeCompare(b, 'id'));
   if(namaRuang.length){
-    html += '<h3 style="margin:14px 0 8px">🏢 Rincian per Asal Ruangan</h3><div class="tabel-wrap"><table>' +
-      '<tr><th>Asal Ruangan</th><th style="text-align:center">&#8804; 3 hari</th><th style="text-align:center">&gt; 3 hari</th>' +
-      '<th style="text-align:center">Total Dikumpulkan</th><th style="text-align:center">% Terlambat</th></tr>';
+    html += '<h3 style="margin:14px 0 8px">🏢 Rincian per Asal Ruangan (gabungan 3 siklus)</h3><div class="tabel-wrap"><table>' +
+      '<tr><th>Asal Ruangan</th><th style="text-align:center">Tepat (&#8804; 3 hari)</th><th style="text-align:center">Terlambat (&gt; 3 hari)</th>' +
+      '<th style="text-align:center">Total</th><th style="text-align:center">% Terlambat</th></tr>';
     for(const nama of namaRuang){
-      const g = perRuang[nama], t = g.kurang + g.lebih;
-      const p = t ? (g.lebih / t * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
-      html += `<tr><td>${esc(nama)}</td><td style="text-align:center">${g.kurang}</td><td style="text-align:center">${g.lebih}</td>` +
-        `<td style="text-align:center"><b>${t}</b></td><td style="text-align:center"><span class="badge ${g.lebih ? 'b-merah' : 'b-hijau'}">${p}</span></td></tr>`;
+      const g = perRuang[nama], t = g.tepat + g.telat;
+      html += `<tr><td>${esc(nama)}</td><td style="text-align:center">${g.tepat}</td><td style="text-align:center">${g.telat}</td>` +
+        `<td style="text-align:center"><b>${t}</b></td><td style="text-align:center"><span class="badge ${g.telat ? 'b-merah' : 'b-hijau'}">${persen(g.telat, t)}</span></td></tr>`;
     }
     html += '</table></div>';
   }
 
-  const ket = [];
-  if(belum) ket.push(`${belum} form belum dikumpulkan (belum masuk hitungan rekap)`);
-  if(takcatat) ket.push(`${takcatat} data berstatus "Sudah" tapi tanpa tanggal pengumpulan sehingga tidak bisa dihitung`);
-  if(ket.length) html += `<div class="info">Catatan: ${ket.join('; ')}.</div>`;
+  html += `<div class="info">Persentase dihitung dari form yang <b>sudah dikumpulkan</b> pada tiap siklus. Ketepatan diukur dari jatuh tempo siklus (Siklus 1 = tanggal awal, Siklus 2 = +3 hari, Siklus 3 = +6 hari); &#8804; 3 hari dari jatuh tempo = tepat waktu.` +
+    (takcatat ? ` <b>${takcatat}</b> form berstatus "Sudah" tanpa tanggal pengisian sehingga tidak dapat dihitung.` : '') + '</div>';
   $('ab_stat').innerHTML = html;
 }
 
