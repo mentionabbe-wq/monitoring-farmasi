@@ -154,15 +154,23 @@
       <div class="field"><label>Nama Antibiotik</label><input type="text" id="ab_antibiotik" placeholder="Contoh: Ceftriaxone"></div>
       <div class="field"><label>Dosis</label><input type="text" id="ab_dosis" placeholder="Contoh: 2x1 gr IV"></div>
       <div class="field"><label>Dokter</label><input type="text" id="ab_dokter" placeholder="Nama dokter (DPJP)"></div>
-      <div class="field"><label>Pengisian Formulir</label>
+      <div class="field"><label>Form Awal / Siklus 1 (hari ke-0)</label>
         <select id="ab_form" onchange="abToggle()">
           <option>Belum mengumpulkan form</option>
           <option>Sudah mengumpulkan form</option>
         </select>
       </div>
-      <div class="field"><label>Tanggal Pengumpulan Form</label><input type="date" id="ab_tglkumpul"></div>
+      <div class="field"><label>Tgl Pengumpulan Form Awal</label><input type="date" id="ab_tglkumpul"></div>
+      <div class="field"><label>Form Lanjutan ke-1 / Siklus 2 (hari ke-3)</label>
+        <select id="ab_form1" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
+      </div>
+      <div class="field"><label>Tgl Pengisian Form Lanjutan ke-1</label><input type="date" id="ab_tgl1"></div>
+      <div class="field"><label>Form Lanjutan ke-2 / Siklus 3 (hari ke-6)</label>
+        <select id="ab_form2" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
+      </div>
+      <div class="field"><label>Tgl Pengisian Form Lanjutan ke-2</label><input type="date" id="ab_tgl2"></div>
     </div>
-    <div class="info">Kolom <b>"Lebih 3 Hari"</b> dihitung otomatis dari tanggal awal antibiotik: form yang <b>belum</b> dikumpulkan lebih dari 3 hari ditandai merah; form yang <b>sudah</b> dikumpulkan dinilai tepat waktu / terlambat berdasarkan tanggal pengumpulannya (terisi otomatis saat status diubah ke "Sudah").</div>
+    <div class="info">Antibiotik dievaluasi tiap <b>3 hari</b> (72 jam) selama <b>3 siklus / 9 hari</b>: form awal di hari ke-0, form lanjutan ke-1 di hari ke-3, form lanjutan ke-2 di hari ke-6. Kolom <b>"Status Siklus"</b> otomatis mengingatkan form siklus mana yang jatuh tempo / terlambat. Tanggal terisi otomatis saat status diubah ke "Sudah".</div>
     <div class="aksi">
       <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
       <button class="btn btn-batal" id="ab_batal" style="display:none" onclick="batalEdit('ab')">Batal Edit</button>
@@ -496,6 +504,21 @@ function hitungHariAB(r){
   return {kat: h > 3 ? 'belum_lewat' : 'belum_dalam', hari:h};
 }
 
+// Status siklus: antibiotik dievaluasi tiap 3 hari selama 3 siklus (9 hari).
+// Form awal (hari 0), Form Lanjutan ke-1 (hari 3), Form Lanjutan ke-2 (hari 6).
+function statusSiklus(r){
+  if(!r.tanggal) return {t:'-', c:'b-abu'};
+  const D = Math.floor((new Date(hariIni()) - new Date(r.tanggal)) / 86400000);
+  const s0 = r.form && r.form.startsWith('Sudah'), s1 = r.form1 === 'Sudah', s2 = r.form2 === 'Sudah';
+  if(!s0) return {t:`Form awal belum (hari ke-${D})`, c: D > 3 ? 'b-merah' : 'b-oranye'};
+  if(D >= 3 && !s1) return {t:`Perlu Form Lanjutan ke-1 (hari ke-${D})`, c:'b-merah'};
+  if(D >= 6 && !s2) return {t:`Perlu Form Lanjutan ke-2 (hari ke-${D})`, c:'b-merah'};
+  if(D >= 9) return {t:`Selesai 3 siklus (${D} hari)`, c:'b-hijau'};
+  if(D >= 6) return {t:`Siklus 3 berjalan (hari ke-${D})`, c:'b-hijau'};
+  if(D >= 3) return {t:`Siklus 2 berjalan (hari ke-${D})`, c:'b-hijau'};
+  return {t:`Siklus 1 berjalan (hari ke-${D})`, c:'b-hijau'};
+}
+
 /* ====================== KONFIGURASI MODUL UTAMA ====================== */
 /* tiap modul: key penyimpanan, daftar field {id input, key data, label}, kolom pencarian */
 const MODUL = {
@@ -510,22 +533,34 @@ const MODUL = {
       {i:'ab_antibiotik', k:'antibiotik', l:'Nama Antibiotik'},
       {i:'ab_dosis', k:'dosis', l:'Dosis'},
       {i:'ab_dokter', k:'dokter', l:'Dokter'},
-      {i:'ab_form', k:'form', l:'Pengisian Formulir'},
-      {i:'ab_tglkumpul', k:'tglkumpul', l:'Tgl Pengumpulan', tgl:true}
+      {i:'ab_form', k:'form', l:'Form Awal (Siklus 1)'},
+      {i:'ab_tglkumpul', k:'tglkumpul', l:'Tgl Form Awal', tgl:true},
+      {i:'ab_form1', k:'form1', l:'Form Lanjutan ke-1'},
+      {i:'ab_tgl1', k:'tgl1', l:'Tgl Form Lanjutan ke-1', tgl:true},
+      {i:'ab_form2', k:'form2', l:'Form Lanjutan ke-2'},
+      {i:'ab_tgl2', k:'tgl2', l:'Tgl Form Lanjutan ke-2', tgl:true}
     ],
     cari:['nama','norm','ruangan','antibiotik','dokter'],
-    ekstraTh:'<th>Lebih 3 Hari</th>',
+    nEkstra:2,
+    ekstraTh:'<th>Form Awal</th><th>Status Siklus</th>',
     ekstraTd: r => {
       const x = hitungHariAB(r);
+      let td1;
       switch(x.kat){
-        case 'sudah_tepat': return `<td><span class="badge b-hijau">Tepat waktu (${x.hari} hari)</span></td>`;
-        case 'sudah_telat': return `<td><span class="badge b-oranye">Terlambat (${x.hari} hari)</span></td>`;
-        case 'belum_dalam': return `<td><span class="badge b-hijau">Tidak (${x.hari} hari)</span></td>`;
-        case 'belum_lewat': return `<td><span class="badge b-merah">YA (${x.hari} hari)</span></td>`;
-        default: return '<td><span class="badge b-abu">-</span></td>';
+        case 'sudah_tepat': td1 = `<td><span class="badge b-hijau">Tepat waktu (${x.hari} hari)</span></td>`; break;
+        case 'sudah_telat': td1 = `<td><span class="badge b-oranye">Terlambat (${x.hari} hari)</span></td>`; break;
+        case 'belum_dalam': td1 = `<td><span class="badge b-hijau">Belum (${x.hari} hari)</span></td>`; break;
+        case 'belum_lewat': td1 = `<td><span class="badge b-merah">Belum, lewat (${x.hari} hari)</span></td>`; break;
+        default: td1 = '<td><span class="badge b-abu">-</span></td>';
       }
+      const s = statusSiklus(r);
+      return td1 + `<td><span class="badge ${s.c}">${esc(s.t)}</span></td>`;
     },
-    badge:{form: v => v && v.startsWith('Sudah') ? 'b-hijau' : 'b-merah'}
+    badge:{
+      form: v => v && v.startsWith('Sudah') ? 'b-hijau' : 'b-merah',
+      form1: v => v === 'Sudah' ? 'b-hijau' : 'b-merah',
+      form2: v => v === 'Sudah' ? 'b-hijau' : 'b-merah'
+    }
   },
   mr: {
     key:'monitoring_rm',
@@ -684,7 +719,7 @@ function render(m){
 
   let html = '<tr><th>No</th>' + cfg.fields.map(f=>'<th>'+f.l+'</th>').join('') + (cfg.ekstraTh||'') + '<th>Aksi</th></tr>';
   if(!totalData){
-    html += `<tr><td class="kosong" colspan="${cfg.fields.length + 3}">${semua.length ? 'Tidak ada data yang cocok dengan filter' : 'Belum ada data'}</td></tr>`;
+    html += `<tr><td class="kosong" colspan="${cfg.fields.length + (cfg.nEkstra||0) + 2}">${semua.length ? 'Tidak ada data yang cocok dengan filter' : 'Belum ada data'}</td></tr>`;
   } else {
     data.forEach((r,i) => {
       html += '<tr><td>'+(mulai + i + 1)+'</td>';
@@ -881,10 +916,16 @@ function docAntibiotik(){
   let isi = BR(400, SEL_H(500,'No') + SEL_H(2600,'Nama Antibiotik') + SEL_H(1500,'Dosis') + SEL_H(1100,'Rute') + SEL_H(1400,'Frekuensi') + SEL_H(1269,'Tgl Mulai') + SEL_H(1269,'Tgl Stop'));
   for(let n=1; n<=4; n++) isi += BR(440, SEL_NO(500,n) + g.slice(1).map(w=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr><w:p/></w:tc>`).join(''));
   x += TBL(b, g, isi);
-  x += SUBBAB('C. STATUS PENGUMPULAN FORMULIR');
-  x += PARA('☐ Sudah mengumpulkan form          ☐ Belum mengumpulkan form');
-  x += PARA('Tanggal pengumpulan : .......................................................');
-  x += PARA('Catatan: formulir yang belum dikumpulkan lebih dari 3 hari sejak tanggal awal pemberian antibiotik akan ditandai pada sistem monitoring (MedTrack Pro).', 18);
+  x += SUBBAB('C. PENGUMPULAN FORMULIR (EVALUASI TIAP 3 HARI / 3 SIKLUS)');
+  const gc = [500,4638,1600,1400,1500];
+  let ci = BR(400, SEL_H(500,'No') + SEL_H(4638,'Siklus Evaluasi') + SEL_H(1600,'Sudah / Belum') + SEL_H(1400,'Tgl Pengisian') + SEL_H(1500,'Paraf'));
+  [['Form Awal (Siklus 1) — hari ke-0'],['Form Lanjutan ke-1 (Siklus 2) — hari ke-3'],['Form Lanjutan ke-2 (Siklus 3) — hari ke-6']].forEach((bar,i) => {
+    ci += BR(440, SEL_NO(500,i+1) +
+      `<w:tc><w:tcPr><w:tcW w:w="4638" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${bar[0]}</w:t></w:r></w:p></w:tc>` +
+      [1600,1400,1500].map(w=>`<w:tc><w:tcPr><w:tcW w:w="${w}" w:type="dxa"/></w:tcPr><w:p/></w:tc>`).join(''));
+  });
+  x += TBL(b, gc, ci);
+  x += PARA('Catatan: antibiotik dievaluasi tiap 72 jam selama 3 siklus (9 hari); form yang belum dikumpulkan lebih dari 3 hari sejak jatuh tempo ditandai pada sistem monitoring (MedTrack Pro).', 18);
   x += TTD('Dokter (DPJP)', 'Apoteker / Petugas Farmasi', b);
   return x + SECT(true);
 }
@@ -1228,8 +1269,8 @@ function lebih3HariTeks(r){
   switch(x.kat){
     case 'sudah_tepat': return `Tepat waktu (${x.hari} hari)`;
     case 'sudah_telat': return `Terlambat (${x.hari} hari)`;
-    case 'belum_dalam': return `Tidak (${x.hari} hari)`;
-    case 'belum_lewat': return `YA (${x.hari} hari)`;
+    case 'belum_dalam': return `Belum (${x.hari} hari)`;
+    case 'belum_lewat': return `Belum, lewat (${x.hari} hari)`;
     default: return '-';
   }
 }
@@ -1239,11 +1280,11 @@ function exportExcel(m){
   const data = tersaring(m, muat(cfg.key)); // export mengikuti filter aktif
   if(!data.length){ alert('Tidak ada data untuk di-export (periksa filter tanggal/pencarian).'); return; }
   const kepala = cfg.fields.map(f => f.l);
-  if(m === 'ab') kepala.push('Lebih 3 Hari');
+  if(m === 'ab') kepala.push('Form Awal', 'Status Siklus');
   const rows = [...barisKop(), kepala];
   data.forEach(r => {
     const baris = cfg.fields.map(f => f.tgl ? fmtTgl(r[f.k]) : (r[f.k] || ''));
-    if(m === 'ab') baris.push(lebih3HariTeks(r));
+    if(m === 'ab') baris.push(lebih3HariTeks(r), statusSiklus(r).t);
     rows.push(baris);
   });
   unduhExcel(cfg.key + '_' + hariIni() + '.xlsx', [{nama: LABEL_MODUL[m], rows}]);
@@ -1346,8 +1387,9 @@ function isiDatalist(){
   $('dl_petugas').innerHTML = [...petugas].map(v => `<option value="${esc(v)}">`).join('');
 }
 function abToggle(){
-  const sudah = $('ab_form').value.startsWith('Sudah');
-  if(sudah && !$('ab_tglkumpul').value) $('ab_tglkumpul').value = hariIni();
+  if($('ab_form').value.startsWith('Sudah') && !$('ab_tglkumpul').value) $('ab_tglkumpul').value = hariIni();
+  if($('ab_form1').value === 'Sudah' && !$('ab_tgl1').value) $('ab_tgl1').value = hariIni();
+  if($('ab_form2').value === 'Sudah' && !$('ab_tgl2').value) $('ab_tgl2').value = hariIni();
 }
 function semuaRender(){ Object.keys(MODUL).forEach(render); renderIBS(); }
 
