@@ -109,8 +109,7 @@
 
 <nav>
   <button class="aktif" onclick="bukaTab('antibiotik',this)">Antibiotik</button>
-  <button onclick="bukaTab('erm',this)">E-RM</button>
-  <button onclick="bukaTab('rmmanual',this)">RM Manual</button>
+  <button onclick="bukaTab('rm',this)">E-RM &amp; RM Manual</button>
   <button onclick="bukaTab('screening',this)">Screening</button>
   <button onclick="bukaTab('highalert',this)">High Alert</button>
   <button onclick="bukaTab('ibs',this)">Laporan Jaga IBS</button>
@@ -159,61 +158,44 @@
   </div>
 </section>
 
-<!-- ========== 2. E-RM ========== -->
-<section id="tab-erm" class="tab">
+<!-- ========== 2. E-RM & RM MANUAL (GABUNGAN) ========== -->
+<section id="tab-rm" class="tab">
   <div class="kartu">
-    <h2>🖥️ Monitoring Pengisian E-RM</h2>
+    <h2>🖥️ Monitoring Pengisian E-RM &amp; RM Manual</h2>
     <div class="grid">
-      <div class="field"><label>Tanggal Masuk Pasien *</label><input type="date" id="erm_tglmasuk"></div>
-      <div class="field"><label>Nama Pasien *</label><input type="text" id="erm_nama" placeholder="Nama pasien"></div>
-      <div class="field"><label>Nomor RM *</label><input type="text" id="erm_norm" placeholder="No. RM"></div>
-      <div class="field"><label>Pengisian E-RM</label>
-        <select id="erm_status" onchange="ermToggle()">
+      <div class="field"><label>Tanggal Masuk Pasien *</label><input type="date" id="mr_tglmasuk"></div>
+      <div class="field"><label>Nama Pasien *</label><input type="text" id="mr_nama" placeholder="Nama pasien"></div>
+      <div class="field"><label>No. RM *</label><input type="text" id="mr_norm" placeholder="No. RM"></div>
+      <div class="field"><label>Ruangan Perawatan</label><input type="text" id="mr_ruangan" list="dl_ruangan" placeholder="Contoh: Rawat Inap Anak"></div>
+      <div class="field"><label>Pengisian E-RM (CPPT &amp; Edukasi)</label>
+        <select id="mr_erm" onchange="mrToggle('erm')">
           <option>Belum</option>
           <option>Sudah</option>
         </select>
       </div>
-      <div class="field"><label>Tanggal Pengisian E-RM</label><input type="date" id="erm_tglisi"></div>
-      <div class="field"><label>Nama Pengisi E-RM</label><input type="text" id="erm_pengisi" placeholder="Nama petugas pengisi"></div>
+      <div class="field"><label>Tanggal Pengisian E-RM</label><input type="date" id="mr_ermtgl"></div>
+      <div class="field"><label>Nama Petugas Pengisi E-RM</label><input type="text" id="mr_ermptg" list="dl_petugas" placeholder="Nama petugas"></div>
+      <div class="field"><label>Pengisian RM Manual (Edukasi &amp; Rekonsiliasi)</label>
+        <select id="mr_rmm" onchange="mrToggle('rmm')">
+          <option>Belum</option>
+          <option>Sudah</option>
+        </select>
+      </div>
+      <div class="field"><label>Tanggal Pengisian RM Manual</label><input type="date" id="mr_rmmtgl"></div>
+      <div class="field"><label>Nama Petugas Pengisi RM Manual</label><input type="text" id="mr_rmmptg" list="dl_petugas" placeholder="Nama petugas"></div>
     </div>
+    <div class="info">Tanggal pengisian terisi otomatis saat status diubah ke "Sudah". Pilihan ruangan dan nama petugas muncul otomatis dari data yang pernah diinput.</div>
     <div class="aksi">
-      <button class="btn btn-simpan" onclick="simpan('erm')">💾 Simpan</button>
-      <button class="btn btn-batal" id="erm_batal" style="display:none" onclick="batalEdit('erm')">Batal Edit</button>
-      <button class="btn btn-csv" onclick="exportExcel('erm')">📊 Export Excel</button>
-    </div>
-    <div class="cari" style="margin-top:12px"><input type="text" id="erm_cari" placeholder="🔍 Cari nama / No. RM..." oninput="render('erm')"></div>
-    <div class="tabel-wrap"><table id="erm_tabel"></table></div>
-  </div>
-</section>
-
-<!-- ========== 3. RM MANUAL ========== -->
-<section id="tab-rmmanual" class="tab">
-  <div class="kartu">
-    <h2>📁 Monitoring Pengisian RM Status Manual</h2>
-    <div class="grid">
-      <div class="field"><label>Nama Pasien *</label><input type="text" id="rm_nama" placeholder="Nama pasien"></div>
-      <div class="field"><label>Nomor RM *</label><input type="text" id="rm_norm" placeholder="No. RM"></div>
-      <div class="field"><label>Tanggal Masuk Pasien *</label><input type="date" id="rm_tglmasuk"></div>
-      <div class="field"><label>Tanggal Pulang Pasien</label><input type="date" id="rm_tglpulang"></div>
-      <div class="field"><label>CPPO</label>
-        <select id="rm_cppo"><option>BELUM</option><option>SUDAH</option></select>
-      </div>
-      <div class="field"><label>Rekonsiliasi Obat</label>
-        <select id="rm_rekon"><option>BELUM</option><option>SUDAH</option></select>
-      </div>
-      <div class="field"><label>Edukasi</label>
-        <select id="rm_edukasi"><option>BELUM</option><option>SUDAH</option></select>
-      </div>
-    </div>
-    <div class="aksi">
-      <button class="btn btn-simpan" onclick="simpan('rm')">💾 Simpan</button>
-      <button class="btn btn-batal" id="rm_batal" style="display:none" onclick="batalEdit('rm')">Batal Edit</button>
-      <button class="btn btn-csv" onclick="exportExcel('rm')">📊 Export Excel</button>
+      <button class="btn btn-simpan" onclick="simpan('mr')">💾 Simpan</button>
+      <button class="btn btn-batal" id="mr_batal" style="display:none" onclick="batalEdit('mr')">Batal Edit</button>
+      <button class="btn btn-csv" onclick="exportExcel('mr')">📊 Export Excel</button>
       <a class="btn btn-unduh" id="dl_kop" href="form/Kartu-Obat-Pasien-KOP.docx" download>📄 Download KOP (Word)</a>
     </div>
-    <div class="cari" style="margin-top:12px"><input type="text" id="rm_cari" placeholder="🔍 Cari nama / No. RM..." oninput="render('rm')"></div>
-    <div class="tabel-wrap"><table id="rm_tabel"></table></div>
+    <div class="cari" style="margin-top:12px"><input type="text" id="mr_cari" placeholder="🔍 Cari nama / No. RM / ruangan / petugas..." oninput="render('mr')"></div>
+    <div class="tabel-wrap"><table id="mr_tabel"></table></div>
   </div>
+  <datalist id="dl_ruangan"></datalist>
+  <datalist id="dl_petugas"></datalist>
 </section>
 
 <!-- ========== 4. SCREENING ========== -->
@@ -396,7 +378,7 @@ const $ = id => document.getElementById(id);
 const hariIni = () => new Date().toISOString().slice(0,10);
 const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmtTgl = t => { if(!t) return '-'; const [y,m,d]=t.split('-'); return `${d}/${m}/${y}`; };
-const SEMUA_KUNCI = ['antibiotik','erm','rmmanual','screening','highalert','ibs_operasi','ibs_cekfloor','ibs_pakaifloor','ibs_paket','ibs_narkotik','ibs_highalert','ibs_sdm'];
+const SEMUA_KUNCI = ['antibiotik','monitoring_rm','erm','rmmanual','screening','highalert','ibs_operasi','ibs_cekfloor','ibs_pakaifloor','ibs_paket','ibs_narkotik','ibs_highalert','ibs_sdm'];
 let CACHE = null; // null = data di localStorage browser; object = data di server (CasaOS)
 const muat = k => CACHE ? (CACHE[k] || []) : JSON.parse(localStorage.getItem('monfar_'+k) || '[]');
 const taruh = (k,v) => {
@@ -468,35 +450,24 @@ const MODUL = {
     },
     badge:{form: v => v && v.startsWith('Sudah') ? 'b-hijau' : 'b-merah'}
   },
-  erm: {
-    key:'erm',
+  mr: {
+    key:'monitoring_rm',
     fields:[
-      {i:'erm_tglmasuk', k:'tglmasuk', l:'Tgl Masuk', tgl:true, wajib:true},
-      {i:'erm_nama', k:'nama', l:'Nama Pasien', wajib:true},
-      {i:'erm_norm', k:'norm', l:'No. RM', wajib:true},
-      {i:'erm_status', k:'status', l:'Pengisian E-RM'},
-      {i:'erm_tglisi', k:'tglisi', l:'Tgl Pengisian', tgl:true},
-      {i:'erm_pengisi', k:'pengisi', l:'Nama Pengisi'}
+      {i:'mr_tglmasuk', k:'tglmasuk', l:'Tgl Masuk', tgl:true, wajib:true},
+      {i:'mr_nama', k:'nama', l:'Nama Pasien', wajib:true},
+      {i:'mr_norm', k:'norm', l:'No. RM', wajib:true},
+      {i:'mr_ruangan', k:'ruangan', l:'Ruangan Perawatan'},
+      {i:'mr_erm', k:'erm', l:'E-RM (CPPT & Edukasi)'},
+      {i:'mr_ermtgl', k:'ermtgl', l:'Tgl Pengisian E-RM', tgl:true},
+      {i:'mr_ermptg', k:'ermptg', l:'Petugas E-RM'},
+      {i:'mr_rmm', k:'rmm', l:'RM Manual (Edukasi & Rekonsiliasi)'},
+      {i:'mr_rmmtgl', k:'rmmtgl', l:'Tgl Pengisian RM Manual', tgl:true},
+      {i:'mr_rmmptg', k:'rmmptg', l:'Petugas RM Manual'}
     ],
-    cari:['nama','norm','pengisi'],
-    badge:{status: v => v === 'Sudah' ? 'b-hijau' : 'b-merah'}
-  },
-  rm: {
-    key:'rmmanual',
-    fields:[
-      {i:'rm_nama', k:'nama', l:'Nama Pasien', wajib:true},
-      {i:'rm_norm', k:'norm', l:'No. RM', wajib:true},
-      {i:'rm_tglmasuk', k:'tglmasuk', l:'Tgl Masuk', tgl:true, wajib:true},
-      {i:'rm_tglpulang', k:'tglpulang', l:'Tgl Pulang', tgl:true},
-      {i:'rm_cppo', k:'cppo', l:'CPPO'},
-      {i:'rm_rekon', k:'rekon', l:'Rekonsiliasi Obat'},
-      {i:'rm_edukasi', k:'edukasi', l:'Edukasi'}
-    ],
-    cari:['nama','norm'],
+    cari:['nama','norm','ruangan','ermptg','rmmptg'],
     badge:{
-      cppo: v => v === 'SUDAH' ? 'b-hijau' : 'b-merah',
-      rekon: v => v === 'SUDAH' ? 'b-hijau' : 'b-merah',
-      edukasi: v => v === 'SUDAH' ? 'b-hijau' : 'b-merah'
+      erm: v => v === 'Sudah' ? 'b-hijau' : 'b-merah',
+      rmm: v => v === 'Sudah' ? 'b-hijau' : 'b-merah'
     }
   },
   sc: {
@@ -610,6 +581,7 @@ function render(m){
   }
   $(m+'_tabel').innerHTML = html;
   if(m === 'ab') renderStatAB();
+  if(m === 'mr') isiDatalist();
 }
 
 /* ====================== REKAP PENGUMPULAN FORM ANTIBIOTIK ====================== */
@@ -856,7 +828,7 @@ function unduhExcel(namaFile, sheets){ // sheets: [{nama, rows:[[...]]}]
   URL.revokeObjectURL(a.href);
 }
 
-const LABEL_MODUL = {ab:'Form Antibiotik', erm:'Monitoring E-RM', rm:'RM Status Manual', sc:'Screening Harian', ha:'Obat High Alert'};
+const LABEL_MODUL = {ab:'Form Antibiotik', mr:'E-RM & RM Manual', sc:'Screening Harian', ha:'Obat High Alert'};
 
 function lebih3HariTeks(r){
   const x = hitungHariAB(r);
@@ -933,11 +905,52 @@ function restoreSemua(input){
 
 /* ====================== INIT ====================== */
 function isiTanggalDefault(){
-  ['ab_tanggal','erm_tglmasuk','rm_tglmasuk','sc_tanggal','ha_tanggal'].forEach(id => { if(!$(id).value) $(id).value = hariIni(); });
+  ['ab_tanggal','mr_tglmasuk','sc_tanggal','ha_tanggal'].forEach(id => { if(!$(id).value) $(id).value = hariIni(); });
 }
-function ermToggle(){
-  const sudah = $('erm_status').value === 'Sudah';
-  if(sudah && !$('erm_tglisi').value) $('erm_tglisi').value = hariIni();
+function mrToggle(bagian){ // bagian: 'erm' atau 'rmm'
+  const sudah = $('mr_' + bagian).value === 'Sudah';
+  const tgl = $('mr_' + bagian + 'tgl');
+  if(sudah && !tgl.value) tgl.value = hariIni();
+}
+
+// gabungkan data lama tab E-RM dan RM Manual (per No. RM) ke modul gabungan
+function migrasiRM(){
+  if(muat('monitoring_rm').length) return;
+  const erm = muat('erm'), rmm = muat('rmmanual');
+  if(!erm.length && !rmm.length) return;
+  const peta = {}, baris = [];
+  erm.forEach(r => {
+    const b = {id:uid(), tglmasuk:r.tglmasuk||'', nama:r.nama||'', norm:r.norm||'', ruangan:'',
+      erm:r.status||'Belum', ermtgl:r.tglisi||'', ermptg:r.pengisi||'', rmm:'Belum', rmmtgl:'', rmmptg:''};
+    baris.push(b);
+    if(b.norm) peta[b.norm] = b;
+  });
+  rmm.forEach(r => {
+    let b = r.norm && peta[r.norm];
+    if(!b){
+      b = {id:uid(), tglmasuk:r.tglmasuk||'', nama:r.nama||'', norm:r.norm||'', ruangan:'',
+        erm:'Belum', ermtgl:'', ermptg:'', rmm:'Belum', rmmtgl:'', rmmptg:''};
+      baris.push(b);
+      if(b.norm) peta[b.norm] = b;
+    }
+    b.rmm = (r.rekon === 'SUDAH' && r.edukasi === 'SUDAH') ? 'Sudah' : 'Belum';
+    if(!b.tglmasuk) b.tglmasuk = r.tglmasuk || '';
+  });
+  taruh('monitoring_rm', baris);
+}
+
+// datalist saran ruangan & petugas dari data yang pernah diinput
+function isiDatalist(){
+  const data = muat('monitoring_rm');
+  const ruangan = new Set(['Rawat Inap Anak','Rawat Inap Dewasa','Rawat Inap Perinatologi','Rawat Inap VK']);
+  const petugas = new Set();
+  data.forEach(r => {
+    if(r.ruangan) ruangan.add(r.ruangan);
+    if(r.ermptg) petugas.add(r.ermptg);
+    if(r.rmmptg) petugas.add(r.rmmptg);
+  });
+  $('dl_ruangan').innerHTML = [...ruangan].map(v => `<option value="${esc(v)}">`).join('');
+  $('dl_petugas').innerHTML = [...petugas].map(v => `<option value="${esc(v)}">`).join('');
 }
 function abToggle(){
   const sudah = $('ab_form').value.startsWith('Sudah');
@@ -968,6 +981,7 @@ if(location.protocol === 'file:'){
       SEMUA_KUNCI.forEach(k => { try{ const v = JSON.parse(localStorage.getItem('monfar_'+k)||'[]'); if(v.length) taruh(k, v); }catch(e){} });
     }
   }
+  migrasiRM();
   semuaRender();
 })();
 </script>

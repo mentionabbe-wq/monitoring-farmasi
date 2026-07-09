@@ -3,11 +3,10 @@
 Aplikasi input dan monitoring farmasi rumah sakit:
 
 1. **Form Antibiotik** — dengan penanda otomatis form yang belum dikumpulkan lebih dari 3 hari
-2. **Monitoring Pengisian E-RM**
-3. **Monitoring Pengisian RM Status Manual** (CPPO, rekonsiliasi obat, edukasi)
-4. **Screening Harian**
-5. **Monitoring Obat High Alert (PKPO)** — kategori obat (elektrolit konsentrat, LASA/NORUM, dll), pelabelan stiker, penyimpanan, double check 2 petugas
-6. **Laporan Jaga IBS** — jenis operasi, cek floor stok, pemakaian floorstock, input paket obat, resep narkotik, SDM double check (tiap seksi multi-baris, tersimpan per tanggal)
+2. **Monitoring E-RM & RM Manual (gabungan)** — per pasien: ruangan perawatan, status/tanggal/petugas pengisian E-RM (CPPT & edukasi) dan RM manual (edukasi & rekonsiliasi)
+3. **Screening Harian**
+4. **Monitoring Obat High Alert (PKPO)** — kategori obat (elektrolit konsentrat, LASA/NORUM, dll), pelabelan stiker, penyimpanan, double check 2 petugas
+5. **Laporan Jaga IBS** — jenis operasi, cek floor stok, pemakaian floorstock, input paket obat, resep narkotik, SDM double check (tiap seksi multi-baris, tersimpan per tanggal)
 
 Fitur: pencarian, edit/hapus, export Excel (.xlsx) per modul, laporan IBS satu workbook
 berisi 7 sheet, cetak laporan, backup/restore JSON.
