@@ -109,7 +109,7 @@
   <div class="brand">
     <div class="logo" id="logoBox">🩺</div>
     <div>
-      <h1>MedTrack Pro</h1>
+      <h1 id="judulRS">MedTrack Pro</h1>
       <div class="sub"><span id="subRS">Sistem Rekam Medis &amp; Farmasi Terpadu</span> &nbsp; <span id="modeInfo"></span></div>
     </div>
   </div>
@@ -172,6 +172,8 @@
     <div id="ab_stat" style="margin-top:14px"></div>
     <div class="cari" style="margin-top:12px">
       <input type="text" id="ab_cari" placeholder="🔍 Cari nama / No. RM / ruangan..." oninput="ubahFilter('ab')">
+      <span class="lbl">Ruangan:</span>
+      <select id="ab_fr" onchange="ubahFilter('ab')" style="padding:7px 8px; border:1px solid var(--garis); border-radius:6px;"><option value="">Semua Ruangan</option></select>
       <span class="lbl">Tanggal:</span>
       <input type="date" id="ab_f1" onchange="ubahFilter('ab')">
       <span class="lbl">s/d</span>
@@ -600,9 +602,24 @@ function saringCari(m, data){
   if(q) data = data.filter(r => cfg.cari.some(k => (r[k]||'').toLowerCase().includes(q)));
   return data;
 }
+function saringRuang(m, data){ // filter pilih ruangan (jika ada dropdown-nya)
+  const sel = $(m+'_fr');
+  if(sel && sel.value) data = data.filter(r => ((r.ruangan||'').trim() || '(tanpa ruangan)') === sel.value);
+  return data;
+}
+function tersaring(m, data){ return saringRuang(m, saringTanggal(m, saringCari(m, data))); }
+function isiFilterRuang(m, semua){ // isi opsi dropdown ruangan dari data
+  const sel = $(m+'_fr');
+  if(!sel) return;
+  const kini = sel.value;
+  const set = new Set();
+  semua.forEach(r => set.add((r.ruangan||'').trim() || '(tanpa ruangan)'));
+  const opsi = [...set].sort((a,b) => a.localeCompare(b, 'id'));
+  sel.innerHTML = '<option value="">Semua Ruangan</option>' + opsi.map(v => `<option${v===kini?' selected':''}>${esc(v)}</option>`).join('');
+}
 function ubahFilter(m){ hal[m] = 1; render(m); }
 function ubahHal(m, arah){ hal[m] += arah; render(m); }
-function resetFilter(m){ $(m+'_f1').value = ''; $(m+'_f2').value = ''; $(m+'_cari').value = ''; ubahFilter(m); }
+function resetFilter(m){ $(m+'_f1').value = ''; $(m+'_f2').value = ''; $(m+'_cari').value = ''; if($(m+'_fr')) $(m+'_fr').value = ''; ubahFilter(m); }
 
 function simpan(m){
   const cfg = MODUL[m];
@@ -655,7 +672,8 @@ function hapusRec(m, id){
 function render(m){
   const cfg = MODUL[m];
   const semua = muat(cfg.key);
-  let data = saringTanggal(m, saringCari(m, semua));
+  isiFilterRuang(m, semua);
+  let data = tersaring(m, semua);
 
   const totalData = data.length;
   const totalHal = Math.max(1, Math.ceil(totalData / PER_HAL));
@@ -696,7 +714,7 @@ function render(m){
 // Rekap hanya menghitung form yang SUDAH dikumpulkan (punya tanggal pengumpulan):
 // dibagi 2 -> dikumpulkan <= 3 hari (tepat waktu) vs > 3 hari (terlambat).
 function renderStatAB(){
-  const data = saringTanggal('ab', muat('antibiotik')); // rekap mengikuti filter tanggal
+  const data = tersaring('ab', muat('antibiotik')); // rekap mengikuti filter aktif (ruangan/tanggal/cari)
   let kurang = 0, lebih = 0, belum = 0, takcatat = 0;
   const perRuang = {};
   data.forEach(r => {
@@ -746,7 +764,9 @@ const pengaturan = () => (muat('pengaturan')[0] || {});
 function terapkanPengaturan(){
   const p = pengaturan();
   $('logoBox').innerHTML = p.logo ? `<img src="${p.logo}" alt="logo">` : '🩺';
-  $('subRS').textContent = p.nama || 'Sistem Rekam Medis & Farmasi Terpadu';
+  $('judulRS').textContent = p.nama || 'MedTrack Pro';
+  document.title = p.nama || 'MedTrack Pro — Sistem Rekam Medis & Farmasi Terpadu';
+  $('subRS').textContent = 'Sistem Rekam Medis & Farmasi Terpadu';
   let kop = '';
   if(p.nama){
     kop = (p.logo ? `<img src="${p.logo}" alt="logo">` : '') +
@@ -1216,7 +1236,7 @@ function lebih3HariTeks(r){
 
 function exportExcel(m){
   const cfg = MODUL[m];
-  const data = saringTanggal(m, saringCari(m, muat(cfg.key))); // export mengikuti filter aktif
+  const data = tersaring(m, muat(cfg.key)); // export mengikuti filter aktif
   if(!data.length){ alert('Tidak ada data untuk di-export (periksa filter tanggal/pencarian).'); return; }
   const kepala = cfg.fields.map(f => f.l);
   if(m === 'ab') kepala.push('Lebih 3 Hari');
