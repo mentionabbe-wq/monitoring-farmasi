@@ -32,6 +32,14 @@
   .kartu h2{font-size:16px; color:var(--biru-tua); margin-bottom:12px; padding-bottom:8px; border-bottom:2px solid var(--biru-muda);}
   .kartu h3{font-size:14px; color:var(--biru-tua); margin-bottom:10px;}
 
+  .dash-grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); gap:12px;}
+  .metrik{border-radius:10px; padding:14px 16px; color:#fff;}
+  .metrik .m-label{font-size:12px; opacity:.9; margin-bottom:4px;}
+  .metrik .m-nilai{font-size:26px; font-weight:700; line-height:1.1;}
+  .metrik .m-sub{font-size:11px; opacity:.9; margin-top:4px;}
+  .m-biru{background:var(--biru);} .m-hijau{background:var(--hijau);} .m-oranye{background:var(--oranye);}
+  .m-merah{background:var(--merah);} .m-abu{background:#546e7a;} .m-ungu{background:#6a1b9a;}
+
   .grid{display:grid; grid-template-columns:repeat(auto-fill,minmax(210px,1fr)); gap:10px;}
   .field{display:flex; flex-direction:column; gap:4px;}
   .field label{font-size:12px; font-weight:600; color:#546e7a;}
@@ -121,7 +129,8 @@
 </header>
 
 <nav>
-  <button class="aktif" onclick="bukaTab('antibiotik',this)">Antibiotik</button>
+  <button class="aktif" onclick="bukaTab('dashboard',this)">📊 Dashboard</button>
+  <button onclick="bukaTab('antibiotik',this)">Antibiotik</button>
   <button onclick="bukaTab('rm',this)">E-RM &amp; RM Manual</button>
   <button onclick="bukaTab('screening',this)">Screening</button>
   <button onclick="bukaTab('highalert',this)">High Alert</button>
@@ -134,8 +143,21 @@
 <!-- Kop surat: hanya tampil saat mencetak -->
 <div id="kopPrint" class="kop-print"></div>
 
+<!-- ========== 0. DASHBOARD ========== -->
+<section id="tab-dashboard" class="tab aktif">
+  <div class="kartu">
+    <h2>📊 Dashboard Ringkasan</h2>
+    <div id="dash_kartu" class="dash-grid"></div>
+  </div>
+  <div class="kartu">
+    <h3>⚠️ Antibiotik Perlu Tindak Lanjut</h3>
+    <div class="info">Pasien yang form siklusnya jatuh tempo / terlambat berdasarkan hari berjalan.</div>
+    <div class="tabel-wrap"><table id="dash_tindak"></table></div>
+  </div>
+</section>
+
 <!-- ========== 1. ANTIBIOTIK ========== -->
-<section id="tab-antibiotik" class="tab aktif">
+<section id="tab-antibiotik" class="tab">
   <div class="kartu">
     <h2>📋 Form Antibiotik</h2>
     <div class="grid">
@@ -488,6 +510,7 @@ function bukaTab(nama, btn){
   document.querySelectorAll('nav button').forEach(b=>b.classList.remove('aktif'));
   $('tab-'+nama).classList.add('aktif');
   btn.classList.add('aktif');
+  if(nama === 'dashboard') renderDashboard();
 }
 
 /* ====================== KATEGORI PENGUMPULAN FORM ANTIBIOTIK ====================== */
@@ -1423,7 +1446,51 @@ function abToggle(){
   if($('ab_form1').value === 'Sudah' && !$('ab_tgl1').value) $('ab_tgl1').value = hariIni();
   if($('ab_form2').value === 'Sudah' && !$('ab_tgl2').value) $('ab_tgl2').value = hariIni();
 }
-function semuaRender(){ Object.keys(MODUL).forEach(render); renderIBS(); }
+function renderDashboard(){
+  const ab = muat('antibiotik');
+  let tepat = 0, telat = 0, perlu = 0;
+  ab.forEach(r => {
+    for(let c = 0; c < 3; c++){ const s = siklusInfo(r, c); if(s === 'tepat') tepat++; else if(s === 'telat') telat++; }
+    if(statusSiklus(r).c === 'b-merah') perlu++;
+  });
+  const totKumpul = tepat + telat;
+  const pctTepat = totKumpul ? Math.round(tepat / totKumpul * 100) : 0;
+
+  const rm = muat('monitoring_rm');
+  const ermSudah = rm.filter(r => r.erm === 'Sudah').length;
+  const rmmSudah = rm.filter(r => r.rmm === 'Sudah').length;
+  const pctErm = rm.length ? Math.round(ermSudah / rm.length * 100) : 0;
+  const pctRmm = rm.length ? Math.round(rmmSudah / rm.length * 100) : 0;
+  const ha = muat('highalert'), sc = muat('screening');
+
+  const kartu = [
+    {c:'m-biru', label:'Pasien Antibiotik', nilai: ab.length, sub:'total data'},
+    {c: pctTepat >= 80 ? 'm-hijau' : (pctTepat >= 50 ? 'm-oranye' : 'm-merah'), label:'Ketepatan Form (3 siklus)', nilai: pctTepat + '%', sub:`${tepat} tepat / ${telat} terlambat`},
+    {c: perlu ? 'm-merah' : 'm-hijau', label:'Perlu Tindak Lanjut', nilai: perlu, sub:'form siklus jatuh tempo'},
+    {c:'m-biru', label:'Pasien E-RM / RM Manual', nilai: rm.length, sub:'total data'},
+    {c: pctErm >= 80 ? 'm-hijau' : 'm-oranye', label:'E-RM Terisi', nilai: pctErm + '%', sub:`${ermSudah} dari ${rm.length}`},
+    {c: pctRmm >= 80 ? 'm-hijau' : 'm-oranye', label:'RM Manual Terisi', nilai: pctRmm + '%', sub:`${rmmSudah} dari ${rm.length}`},
+    {c:'m-ungu', label:'Obat High Alert', nilai: ha.length, sub:'total data'},
+    {c:'m-abu', label:'Screening Harian', nilai: sc.length, sub:'total data'}
+  ];
+  $('dash_kartu').innerHTML = kartu.map(k =>
+    `<div class="metrik ${k.c}"><div class="m-label">${k.label}</div><div class="m-nilai">${k.nilai}</div><div class="m-sub">${esc(k.sub)}</div></div>`).join('');
+
+  const merah = ab.filter(r => statusSiklus(r).c === 'b-merah');
+  let t = '<tr><th>Nama Pasien</th><th>No. RM</th><th>Ruangan</th><th>Antibiotik</th><th>Status Siklus</th></tr>';
+  if(!merah.length){
+    t += '<tr><td class="kosong" colspan="5">Tidak ada yang perlu tindak lanjut 👍</td></tr>';
+  } else {
+    merah.forEach(r => {
+      const s = statusSiklus(r);
+      t += `<tr><td>${esc(r.nama || '-')}</td><td>${esc(r.norm || '-')}</td><td>${esc(r.ruangan || '-')}</td>` +
+        `<td>${esc(r.antibiotik || '-')}</td><td><span class="badge ${s.c}">${esc(s.t)}</span></td></tr>`;
+    });
+  }
+  $('dash_tindak').innerHTML = t;
+}
+
+function semuaRender(){ Object.keys(MODUL).forEach(render); renderIBS(); renderDashboard(); }
 
 $('ibs_tanggal').value = hariIni();
 isiTanggalDefault();
