@@ -482,7 +482,10 @@
   <div class="modal">
     <div style="display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:6px;">
       <h2 style="font-size:16px; color:var(--biru-tua);">📖 Daftar Obat High Alert</h2>
-      <button class="btn btn-batal" onclick="tampilDaftarHA(false)">✕ Tutup</button>
+      <div style="display:flex; gap:8px;">
+        <button class="btn btn-unduh" onclick="unduhFormWord('daftarha')">📄 Download (Word)</button>
+        <button class="btn btn-batal" onclick="tampilDaftarHA(false)">✕ Tutup</button>
+      </div>
     </div>
     <div class="info" style="margin-bottom:14px;">Klik nama obat untuk mengisi form secara otomatis. Daftar ini contoh umum berdasarkan ISMP/Kemenkes — <b>sesuaikan dengan daftar obat high alert resmi yang ditetapkan rumah sakit Anda</b>.</div>
     <div id="isiDaftarHA"></div>
@@ -1134,10 +1137,28 @@ function docKOP(){
   return x + SECT(false);
 }
 
+function docDaftarHA(){
+  const b = 9638;
+  let x = kopTpl(b);
+  x += JUDUL('DAFTAR OBAT HIGH ALERT', 'Standar PKPO — sesuaikan dengan daftar resmi rumah sakit');
+  const g = [500, 3200, 5938];
+  let isi = BR(400, SEL_H(500,'No') + SEL_H(3200,'Kategori') + SEL_H(5938,'Nama Obat'));
+  DAFTAR_HA.forEach((grp, i) => {
+    isi += BR(440, SEL_NO(500, i+1) +
+      `<w:tc><w:tcPr><w:tcW w:w="3200" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${xmlEsc(grp.kategori)}</w:t></w:r></w:p></w:tc>` +
+      `<w:tc><w:tcPr><w:tcW w:w="5938" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:r><w:t xml:space="preserve">${xmlEsc(grp.obat.join(', '))}</w:t></w:r></w:p></w:tc>`);
+  });
+  x += TBL(b, g, isi);
+  x += PARA('Catatan: daftar ini contoh umum berdasarkan ISMP/Kemenkes. Sesuaikan dengan daftar obat high alert resmi yang ditetapkan rumah sakit.', 18);
+  x += TTD('Kepala Instalasi Farmasi', 'Petugas Farmasi', b);
+  return x + SECT(true);
+}
+
 const FORM_WORD = {
   antibiotik: {file:'Formulir-Antibiotik.docx', buat: docAntibiotik},
   highalert:  {file:'Formulir-High-Alert-PKPO.docx', buat: docHighAlert},
-  kop:        {file:'Kartu-Obat-Pasien-KOP.docx', buat: docKOP}
+  kop:        {file:'Kartu-Obat-Pasien-KOP.docx', buat: docKOP},
+  daftarha:   {file:'Daftar-Obat-High-Alert.docx', buat: docDaftarHA}
 };
 
 function unduhFormWord(jenis){
