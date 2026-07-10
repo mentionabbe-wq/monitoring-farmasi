@@ -163,7 +163,6 @@
     <div class="grid">
       <div class="field"><label>Tanggal Awal Antibiotik *</label><input type="date" id="ab_tanggal"></div>
       <div class="field"><label>Nama Pasien *</label><input type="text" id="ab_nama" placeholder="Nama pasien"></div>
-      <div class="field"><label>Ruangan Siklus 1 (awal)</label><select id="ab_ruangan"></select></div>
       <div class="field"><label>Nomor Rekam Medis *</label><input type="text" id="ab_norm" placeholder="No. RM"></div>
       <div class="field"><label>Jenis Antibiotik</label>
         <select id="ab_jenis">
@@ -183,6 +182,7 @@
         </select>
       </div>
       <div class="field"><label>Tgl Pengumpulan Form Awal</label><input type="date" id="ab_tglkumpul"></div>
+      <div class="field"><label>Ruangan Siklus 1 (awal)</label><select id="ab_ruangan"></select></div>
     </div>
     <button type="button" class="btn btn-batal" id="ab_toggle_lanjutan" onclick="toggleLanjutan()" style="margin-top:10px">➕ Isi Siklus Lanjutan</button>
     <div class="grid" id="ab_siklus2" style="display:none; margin-top:10px">
@@ -604,7 +604,6 @@ const MODUL = {
     fields:[
       {i:'ab_tanggal', k:'tanggal', l:'Tanggal Awal AB', tgl:true},
       {i:'ab_nama', k:'nama', l:'Nama Pasien', wajib:true},
-      {i:'ab_ruangan', k:'ruangan', l:'Ruangan Siklus 1'},
       {i:'ab_norm', k:'norm', l:'No. RM', wajib:true},
       {i:'ab_jenis', k:'jenis', l:'Jenis AB'},
       {i:'ab_antibiotik', k:'antibiotik', l:'Nama Antibiotik'},
@@ -612,6 +611,7 @@ const MODUL = {
       {i:'ab_dokter', k:'dokter', l:'Dokter'},
       {i:'ab_form', k:'form', l:'Form Awal (Siklus 1)'},
       {i:'ab_tglkumpul', k:'tglkumpul', l:'Tgl Form Awal', tgl:true},
+      {i:'ab_ruangan', k:'ruangan', l:'Ruangan Siklus 1'},
       {i:'ab_form1', k:'form1', l:'Form Lanjutan ke-1'},
       {i:'ab_tgl1', k:'tgl1', l:'Tgl Form Lanjutan ke-1', tgl:true},
       {i:'ab_ruangan1', k:'ruangan1', l:'Ruangan Siklus 2'},
