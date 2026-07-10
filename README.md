@@ -22,6 +22,13 @@ berisi 7 sheet, cetak laporan, backup/restore JSON.
 CasaOS otomatis mengunduh image `ghcr.io/mentionabbe-wq/monitoring-farmasi:latest`
 yang di-build oleh GitHub Actions setiap kali ada perubahan di repo ini.
 
+## Pasang lebih dari satu instance (data terpisah)
+
+Untuk instance kedua, import [docker-compose.instance2.yml](docker-compose.instance2.yml)
+(port `8088`, folder data `/DATA/AppData/monitoring-farmasi-2/data`). Untuk instance
+berikutnya, salin file itu lalu ubah agar unik: `name`, `container_name`, port host, dan
+folder volume `/data`. Datanya terpisah karena folder volume berbeda.
+
 ## Install manual (tanpa internet / tanpa registry)
 
 Ikuti [README-CASAOS.md](README-CASAOS.md) — upload `index.html` + `server.js` lewat
