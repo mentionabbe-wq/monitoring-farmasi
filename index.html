@@ -183,6 +183,9 @@
         </select>
       </div>
       <div class="field"><label>Tgl Pengumpulan Form Awal</label><input type="date" id="ab_tglkumpul"></div>
+    </div>
+    <button type="button" class="btn btn-batal" id="ab_toggle_lanjutan" onclick="toggleLanjutan()" style="margin-top:10px">➕ Isi Siklus Lanjutan (2 &amp; 3)</button>
+    <div class="grid" id="ab_lanjutan" style="display:none; margin-top:10px">
       <div class="field"><label>Form Lanjutan ke-1 / Siklus 2 (hari ke-3)</label>
         <select id="ab_form1" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
       </div>
@@ -194,7 +197,7 @@
       <div class="field"><label>Tgl Pengisian Form Lanjutan ke-2</label><input type="date" id="ab_tgl2"></div>
       <div class="field"><label>Ruangan Siklus 3</label><select id="ab_ruangan2"></select></div>
     </div>
-    <div class="info">Antibiotik dievaluasi tiap <b>3 hari</b> (72 jam) selama <b>3 siklus / 9 hari</b>: form awal di hari ke-0, form lanjutan ke-1 di hari ke-3, form lanjutan ke-2 di hari ke-6. Kolom <b>"Status Siklus"</b> otomatis mengingatkan form siklus mana yang jatuh tempo / terlambat. Tanggal terisi otomatis saat status diubah ke "Sudah".</div>
+    <div class="info">Saat pertama input pasien (hari ke-0) cukup isi <b>Siklus 1</b>. Antibiotik dievaluasi tiap <b>3 hari</b> selama <b>3 siklus / 9 hari</b>; isi Form Lanjutan ke-1 (hari ke-3) dan ke-2 (hari ke-6) belakangan lewat tombol Edit (siklus lanjutan terbuka otomatis). Kolom <b>"Status Siklus"</b> mengingatkan form siklus mana yang jatuh tempo/terlambat; tanggal terisi otomatis saat status diubah ke "Sudah".</div>
     <div class="aksi">
       <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
       <button class="btn btn-batal" id="ab_batal" style="display:none" onclick="batalEdit('ab')">Batal Edit</button>
@@ -757,6 +760,7 @@ function simpan(m){
   }
   taruh(cfg.key, data);
   cfg.fields.forEach(f => { const el=$(f.i); el.tagName==='SELECT' ? el.selectedIndex=0 : el.value=''; });
+  if(m === 'ab') toggleLanjutan(false);
   isiTanggalDefault();
   render(m);
 }
@@ -768,6 +772,7 @@ function editRec(m, id){
   cfg.fields.forEach(f => $(f.i).value = r[f.k] || '');
   editId[m] = id;
   $(m+'_batal').style.display = 'inline-block';
+  if(m === 'ab') toggleLanjutan(true); // buka siklus lanjutan saat mengedit
   $(m+'_tabel').closest('.kartu').scrollIntoView({behavior:'smooth'});
 }
 
@@ -775,6 +780,7 @@ function batalEdit(m){
   editId[m] = null;
   $(m+'_batal').style.display = 'none';
   MODUL[m].fields.forEach(f => { const el=$(f.i); el.tagName==='SELECT' ? el.selectedIndex=0 : el.value=''; });
+  if(m === 'ab') toggleLanjutan(false);
   isiTanggalDefault();
 }
 
@@ -1507,6 +1513,12 @@ function abToggle(){
   if($('ab_form').value.startsWith('Sudah') && !$('ab_tglkumpul').value) $('ab_tglkumpul').value = hariIni();
   if($('ab_form1').value === 'Sudah' && !$('ab_tgl1').value) $('ab_tgl1').value = hariIni();
   if($('ab_form2').value === 'Sudah' && !$('ab_tgl2').value) $('ab_tgl2').value = hariIni();
+}
+function toggleLanjutan(paksa){
+  const el = $('ab_lanjutan');
+  const tampil = paksa !== undefined ? paksa : (el.style.display === 'none');
+  el.style.display = tampil ? 'grid' : 'none';
+  $('ab_toggle_lanjutan').textContent = tampil ? '➖ Sembunyikan Siklus Lanjutan' : '➕ Isi Siklus Lanjutan (2 & 3)';
 }
 function renderDashboard(){
   const ab = muat('antibiotik');
