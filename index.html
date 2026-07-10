@@ -537,6 +537,17 @@ function hitungHariAB(r){
   return {kat: h > 3 ? 'belum_lewat' : 'belum_dalam', hari:h};
 }
 
+// Apakah siklus lanjutan sudah waktunya (c=1 utk Lanjutan ke-1 di hari ke-3, c=2 utk ke-2 di hari ke-6).
+// Jika belum tercapai / AB sudah distop sebelum siklus itu, kolomnya ditampilkan "-" (bukan "Belum").
+function siklusTercapai(r, c){
+  if(r.form1 === 'Sudah' && c === 1) return true; // sudah diisi = pasti tampil
+  if(r.form2 === 'Sudah' && c === 2) return true;
+  if(!r.tanggal) return false;
+  const akhir = r.selesai ? (r.tglselesai || hariIni()) : hariIni();
+  const D = Math.floor((new Date(akhir) - new Date(r.tanggal)) / 86400000);
+  return D >= 3 * c;
+}
+
 // Status siklus: antibiotik dievaluasi tiap 3 hari selama 3 siklus (9 hari).
 // Form awal (hari 0), Form Lanjutan ke-1 (hari 3), Form Lanjutan ke-2 (hari 6).
 function statusSiklus(r){
@@ -612,12 +623,12 @@ const MODUL = {
       {i:'ab_form', k:'form', l:'Form Awal (Siklus 1)'},
       {i:'ab_tglkumpul', k:'tglkumpul', l:'Tgl Form Awal', tgl:true},
       {i:'ab_ruangan', k:'ruangan', l:'Ruangan Siklus 1'},
-      {i:'ab_form1', k:'form1', l:'Form Lanjutan ke-1'},
-      {i:'ab_tgl1', k:'tgl1', l:'Tgl Form Lanjutan ke-1', tgl:true},
-      {i:'ab_ruangan1', k:'ruangan1', l:'Ruangan Siklus 2'},
-      {i:'ab_form2', k:'form2', l:'Form Lanjutan ke-2'},
-      {i:'ab_tgl2', k:'tgl2', l:'Tgl Form Lanjutan ke-2', tgl:true},
-      {i:'ab_ruangan2', k:'ruangan2', l:'Ruangan Siklus 3'}
+      {i:'ab_form1', k:'form1', l:'Form Lanjutan ke-1', siklusCek:1},
+      {i:'ab_tgl1', k:'tgl1', l:'Tgl Form Lanjutan ke-1', tgl:true, siklusCek:1},
+      {i:'ab_ruangan1', k:'ruangan1', l:'Ruangan Siklus 2', siklusCek:1},
+      {i:'ab_form2', k:'form2', l:'Form Lanjutan ke-2', siklusCek:2},
+      {i:'ab_tgl2', k:'tgl2', l:'Tgl Form Lanjutan ke-2', tgl:true, siklusCek:2},
+      {i:'ab_ruangan2', k:'ruangan2', l:'Ruangan Siklus 3', siklusCek:2}
     ],
     cari:['nama','norm','ruangan','ruangan1','ruangan2','antibiotik','dokter'],
     nEkstra:2,
@@ -640,11 +651,11 @@ const MODUL = {
       form1: v => v === 'Sudah' ? 'b-hijau' : 'b-merah',
       form2: v => v === 'Sudah' ? 'b-hijau' : 'b-merah'
     },
-    labelEdit: '➕ Tambah Siklus',
-    titleEdit: 'Tambah / isi siklus berikutnya',
-    aksiExtra: r => r.selesai
+    aksiExtra: r => (r.selesai
       ? `<button class="btn-kecil" style="background:#e8f5e9;color:#2e7d32" onclick="aktifkanAB('${r.id}')" title="Aktifkan kembali">↩️</button>`
-      : `<button class="btn-kecil" style="background:#eceff1;color:#455a64" onclick="selesaiAB('${r.id}')" title="Selesai / stop pemakaian AB">⏹️</button>`
+      : `<button class="btn-kecil" style="background:#eceff1;color:#455a64" onclick="selesaiAB('${r.id}')" title="Selesai / stop pemakaian AB">⏹️</button>`)
+      + `<button class="btn-kecil" style="background:#e8f5e9;color:#2e7d32" onclick="editRec('ab','${r.id}')" title="Tambah / isi siklus berikutnya">➕ Tambah Siklus</button>`,
+    titleEdit: 'Edit data'
   },
   mr: {
     key:'monitoring_rm',
@@ -816,6 +827,7 @@ function render(m){
       html += '<tr><td>'+(mulai + i + 1)+'</td>';
       for(const f of cfg.fields){
         let v = r[f.k] || '';
+        if(f.siklusCek && !siklusTercapai(r, f.siklusCek)){ html += '<td>-</td>'; continue; } // siklus belum waktunya
         if(f.tgl) { html += '<td>'+fmtTgl(v)+'</td>'; continue; }
         if(cfg.badge && cfg.badge[f.k] && v){ html += `<td><span class="badge ${cfg.badge[f.k](v)}">${esc(v)}</span></td>`; continue; }
         html += '<td>'+esc(v || '-')+'</td>';
@@ -1410,7 +1422,7 @@ function exportExcel(m){
   if(m === 'ab') kepala.push('Form Awal', 'Status Siklus');
   const rows = [...barisKop(), kepala];
   data.forEach(r => {
-    const baris = cfg.fields.map(f => f.tgl ? fmtTgl(r[f.k]) : (r[f.k] || ''));
+    const baris = cfg.fields.map(f => (f.siklusCek && !siklusTercapai(r, f.siklusCek)) ? '' : (f.tgl ? fmtTgl(r[f.k]) : (r[f.k] || '')));
     if(m === 'ab') baris.push(lebih3HariTeks(r), statusSiklus(r).t);
     rows.push(baris);
   });
