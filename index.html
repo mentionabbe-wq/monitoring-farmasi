@@ -530,6 +530,7 @@ function hitungHariAB(r){
 // Status siklus: antibiotik dievaluasi tiap 3 hari selama 3 siklus (9 hari).
 // Form awal (hari 0), Form Lanjutan ke-1 (hari 3), Form Lanjutan ke-2 (hari 6).
 function statusSiklus(r){
+  if(r.selesai) return {t:`⏹️ Selesai/Stop${r.tglselesai ? ' (' + fmtTgl(r.tglselesai) + ')' : ''}`, c:'b-abu'};
   if(!r.tanggal) return {t:'-', c:'b-abu'};
   const D = Math.floor((new Date(hariIni()) - new Date(r.tanggal)) / 86400000);
   const s0 = r.form && r.form.startsWith('Sudah'), s1 = r.form1 === 'Sudah', s2 = r.form2 === 'Sudah';
@@ -540,6 +541,29 @@ function statusSiklus(r){
   if(D >= 6) return {t:`Siklus 3 berjalan (hari ke-${D})`, c:'b-hijau'};
   if(D >= 3) return {t:`Siklus 2 berjalan (hari ke-${D})`, c:'b-hijau'};
   return {t:`Siklus 1 berjalan (hari ke-${D})`, c:'b-hijau'};
+}
+
+// Tandai pemakaian antibiotik selesai/stop (dihentikan sebelum siklus 2/3 atau tuntas 3 siklus)
+function selesaiAB(id){
+  const data = muat('antibiotik');
+  const r = data.find(x => x.id === id);
+  if(!r) return;
+  const tgl = prompt('Selesaikan / stop pemakaian antibiotik.\nTanggal selesai (YYYY-MM-DD):', hariIni());
+  if(tgl === null) return;
+  r.selesai = true;
+  r.tglselesai = (tgl || '').trim() || hariIni();
+  taruh('antibiotik', data);
+  render('ab');
+}
+function aktifkanAB(id){
+  const data = muat('antibiotik');
+  const r = data.find(x => x.id === id);
+  if(!r) return;
+  if(!confirm('Aktifkan kembali monitoring pemakaian antibiotik ini?')) return;
+  delete r.selesai;
+  delete r.tglselesai;
+  taruh('antibiotik', data);
+  render('ab');
 }
 
 /* ====================== KONFIGURASI MODUL UTAMA ====================== */
@@ -583,7 +607,10 @@ const MODUL = {
       form: v => v && v.startsWith('Sudah') ? 'b-hijau' : 'b-merah',
       form1: v => v === 'Sudah' ? 'b-hijau' : 'b-merah',
       form2: v => v === 'Sudah' ? 'b-hijau' : 'b-merah'
-    }
+    },
+    aksiExtra: r => r.selesai
+      ? `<button class="btn-kecil" style="background:#e8f5e9;color:#2e7d32" onclick="aktifkanAB('${r.id}')" title="Aktifkan kembali">↩️</button>`
+      : `<button class="btn-kecil" style="background:#eceff1;color:#455a64" onclick="selesaiAB('${r.id}')" title="Selesai / stop pemakaian AB">⏹️</button>`
   },
   mr: {
     key:'monitoring_rm',
@@ -754,7 +781,7 @@ function render(m){
       }
       if(cfg.ekstraTd) html += cfg.ekstraTd(r);
       html += `<td style="white-space:nowrap">
-        <button class="btn-kecil btn-edit" onclick="editRec('${m}','${r.id}')">✏️</button>
+        ${cfg.aksiExtra ? cfg.aksiExtra(r) : ''}<button class="btn-kecil btn-edit" onclick="editRec('${m}','${r.id}')">✏️</button>
         <button class="btn-kecil btn-hapus" onclick="hapusRec('${m}','${r.id}')">🗑️</button></td></tr>`;
     });
   }
