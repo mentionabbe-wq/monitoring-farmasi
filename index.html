@@ -640,6 +640,8 @@ const MODUL = {
       form1: v => v === 'Sudah' ? 'b-hijau' : 'b-merah',
       form2: v => v === 'Sudah' ? 'b-hijau' : 'b-merah'
     },
+    labelEdit: '➕ Tambah Siklus',
+    titleEdit: 'Tambah / isi siklus berikutnya',
     aksiExtra: r => r.selesai
       ? `<button class="btn-kecil" style="background:#e8f5e9;color:#2e7d32" onclick="aktifkanAB('${r.id}')" title="Aktifkan kembali">↩️</button>`
       : `<button class="btn-kecil" style="background:#eceff1;color:#455a64" onclick="selesaiAB('${r.id}')" title="Selesai / stop pemakaian AB">⏹️</button>`
@@ -820,8 +822,8 @@ function render(m){
       }
       if(cfg.ekstraTd) html += cfg.ekstraTd(r);
       html += `<td style="white-space:nowrap">
-        ${cfg.aksiExtra ? cfg.aksiExtra(r) : ''}<button class="btn-kecil btn-edit" onclick="editRec('${m}','${r.id}')">✏️</button>
-        <button class="btn-kecil btn-hapus" onclick="hapusRec('${m}','${r.id}')">🗑️</button></td></tr>`;
+        ${cfg.aksiExtra ? cfg.aksiExtra(r) : ''}<button class="btn-kecil btn-edit" onclick="editRec('${m}','${r.id}')" title="${cfg.titleEdit || 'Edit'}">${cfg.labelEdit || '✏️'}</button>
+        <button class="btn-kecil btn-hapus" onclick="hapusRec('${m}','${r.id}')" title="Hapus">🗑️</button></td></tr>`;
     });
   }
   $(m+'_tabel').innerHTML = html;
