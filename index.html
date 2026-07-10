@@ -1019,9 +1019,9 @@ function barisKop(){
 const KOP_TPL = '<w:tbl><w:tblPr><w:tblW w:w="{LEBAR}" w:type="dxa"/><w:tblBorders><w:bottom w:val="single" w:sz="12" w:color="000000"/></w:tblBorders><w:tblLayout w:type="fixed"/></w:tblPr><w:tblGrid><w:gridCol w:w="1800"/><w:gridCol w:w="{SISA}"/></w:tblGrid>' +
   '<w:tr><w:tc><w:tcPr><w:tcW w:w="1800" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr><w:p><w:pPr><w:jc w:val="center"/></w:pPr>{{LOGO}}</w:p></w:tc>' +
   '<w:tc><w:tcPr><w:tcW w:w="{SISA}" w:type="dxa"/><w:vAlign w:val="center"/></w:tcPr>' +
-  '<w:p><w:pPr><w:spacing w:after="20"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">{{NAMA}}</w:t></w:r></w:p>' +
-  '<w:p><w:pPr><w:spacing w:after="20"/></w:pPr><w:r><w:t xml:space="preserve">Alamat : {{ALAMAT}}</w:t></w:r></w:p>' +
-  '<w:p><w:pPr><w:spacing w:after="20"/></w:pPr><w:r><w:t xml:space="preserve">Telp : {{TELP}}  Email : {{EMAIL}}</w:t></w:r></w:p>' +
+  '<w:p><w:pPr><w:spacing w:after="20"/><w:jc w:val="center"/></w:pPr><w:r><w:rPr><w:b/><w:sz w:val="26"/></w:rPr><w:t xml:space="preserve">{{NAMA}}</w:t></w:r></w:p>' +
+  '<w:p><w:pPr><w:spacing w:after="20"/><w:jc w:val="center"/></w:pPr><w:r><w:t xml:space="preserve">Alamat : {{ALAMAT}}</w:t></w:r></w:p>' +
+  '<w:p><w:pPr><w:spacing w:after="20"/><w:jc w:val="center"/></w:pPr><w:r><w:t xml:space="preserve">Telp : {{TELP}}  Email : {{EMAIL}}</w:t></w:r></w:p>' +
   '</w:tc></w:tr></w:tbl>';
 const kopTpl = lebar => KOP_TPL.replace(/\{LEBAR\}/g, lebar).replace(/\{SISA\}/g, lebar - 1800);
 
