@@ -184,13 +184,15 @@
       </div>
       <div class="field"><label>Tgl Pengumpulan Form Awal</label><input type="date" id="ab_tglkumpul"></div>
     </div>
-    <button type="button" class="btn btn-batal" id="ab_toggle_lanjutan" onclick="toggleLanjutan()" style="margin-top:10px">➕ Isi Siklus Lanjutan (2 &amp; 3)</button>
-    <div class="grid" id="ab_lanjutan" style="display:none; margin-top:10px">
+    <button type="button" class="btn btn-batal" id="ab_toggle_lanjutan" onclick="toggleLanjutan()" style="margin-top:10px">➕ Isi Siklus Lanjutan</button>
+    <div class="grid" id="ab_siklus2" style="display:none; margin-top:10px">
       <div class="field"><label>Form Lanjutan ke-1 / Siklus 2 (hari ke-3)</label>
         <select id="ab_form1" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
       </div>
       <div class="field"><label>Tgl Pengisian Form Lanjutan ke-1</label><input type="date" id="ab_tgl1"></div>
       <div class="field"><label>Ruangan Siklus 2</label><select id="ab_ruangan1"></select></div>
+    </div>
+    <div class="grid" id="ab_siklus3" style="display:none; margin-top:10px">
       <div class="field"><label>Form Lanjutan ke-2 / Siklus 3 (hari ke-6)</label>
         <select id="ab_form2" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
       </div>
@@ -760,7 +762,7 @@ function simpan(m){
   }
   taruh(cfg.key, data);
   cfg.fields.forEach(f => { const el=$(f.i); el.tagName==='SELECT' ? el.selectedIndex=0 : el.value=''; });
-  if(m === 'ab') toggleLanjutan(false);
+  if(m === 'ab') tutupSiklus();
   isiTanggalDefault();
   render(m);
 }
@@ -772,7 +774,7 @@ function editRec(m, id){
   cfg.fields.forEach(f => $(f.i).value = r[f.k] || '');
   editId[m] = id;
   $(m+'_batal').style.display = 'inline-block';
-  if(m === 'ab') toggleLanjutan(true); // buka siklus lanjutan saat mengedit
+  if(m === 'ab') aturSiklus(r); // munculkan siklus lanjutan sesuai progres
   $(m+'_tabel').closest('.kartu').scrollIntoView({behavior:'smooth'});
 }
 
@@ -780,7 +782,7 @@ function batalEdit(m){
   editId[m] = null;
   $(m+'_batal').style.display = 'none';
   MODUL[m].fields.forEach(f => { const el=$(f.i); el.tagName==='SELECT' ? el.selectedIndex=0 : el.value=''; });
-  if(m === 'ab') toggleLanjutan(false);
+  if(m === 'ab') tutupSiklus();
   isiTanggalDefault();
 }
 
@@ -1511,14 +1513,27 @@ function isiDatalist(){
 }
 function abToggle(){
   if($('ab_form').value.startsWith('Sudah') && !$('ab_tglkumpul').value) $('ab_tglkumpul').value = hariIni();
-  if($('ab_form1').value === 'Sudah' && !$('ab_tgl1').value) $('ab_tgl1').value = hariIni();
+  if($('ab_form1').value === 'Sudah'){
+    if(!$('ab_tgl1').value) $('ab_tgl1').value = hariIni();
+    tampilSiklus(3, true); // siklus 2 terisi -> munculkan siklus 3
+  }
   if($('ab_form2').value === 'Sudah' && !$('ab_tgl2').value) $('ab_tgl2').value = hariIni();
 }
-function toggleLanjutan(paksa){
-  const el = $('ab_lanjutan');
-  const tampil = paksa !== undefined ? paksa : (el.style.display === 'none');
-  el.style.display = tampil ? 'grid' : 'none';
-  $('ab_toggle_lanjutan').textContent = tampil ? '➖ Sembunyikan Siklus Lanjutan' : '➕ Isi Siklus Lanjutan (2 & 3)';
+function tampilSiklus(n, tampil){
+  $('ab_siklus'+n).style.display = tampil ? 'grid' : 'none';
+  const s2 = $('ab_siklus2').style.display !== 'none';
+  $('ab_toggle_lanjutan').textContent = s2 ? '➖ Sembunyikan Siklus Lanjutan' : '➕ Isi Siklus Lanjutan';
+}
+// tampilan siklus lanjutan mengikuti progres data: siklus 2 selalu bisa diisi;
+// siklus 3 muncul hanya jika form lanjutan ke-1 sudah dikumpulkan.
+function aturSiklus(r){
+  tampilSiklus(2, true);
+  tampilSiklus(3, r && r.form1 === 'Sudah');
+}
+function tutupSiklus(){ tampilSiklus(2, false); tampilSiklus(3, false); }
+function toggleLanjutan(){ // toggle manual (untuk input baru)
+  const buka = $('ab_siklus2').style.display === 'none';
+  if(buka) aturSiklus(null); else tutupSiklus();
 }
 function renderDashboard(){
   const ab = muat('antibiotik');
