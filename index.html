@@ -163,7 +163,7 @@
     <div class="grid">
       <div class="field"><label>Tanggal Awal Antibiotik *</label><input type="date" id="ab_tanggal"></div>
       <div class="field"><label>Nama Pasien *</label><input type="text" id="ab_nama" placeholder="Nama pasien"></div>
-      <div class="field"><label>Ruangan Siklus 1 (awal)</label><input type="text" id="ab_ruangan" list="dl_ruang_ab" placeholder="Contoh: IGD, ICU"></div>
+      <div class="field"><label>Ruangan Siklus 1 (awal)</label><select id="ab_ruangan"></select></div>
       <div class="field"><label>Nomor Rekam Medis *</label><input type="text" id="ab_norm" placeholder="No. RM"></div>
       <div class="field"><label>Jenis Antibiotik</label>
         <select id="ab_jenis">
@@ -187,14 +187,13 @@
         <select id="ab_form1" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
       </div>
       <div class="field"><label>Tgl Pengisian Form Lanjutan ke-1</label><input type="date" id="ab_tgl1"></div>
-      <div class="field"><label>Ruangan Siklus 2</label><input type="text" id="ab_ruangan1" list="dl_ruang_ab" placeholder="Kosongkan jika tidak pindah"></div>
+      <div class="field"><label>Ruangan Siklus 2</label><select id="ab_ruangan1"></select></div>
       <div class="field"><label>Form Lanjutan ke-2 / Siklus 3 (hari ke-6)</label>
         <select id="ab_form2" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
       </div>
       <div class="field"><label>Tgl Pengisian Form Lanjutan ke-2</label><input type="date" id="ab_tgl2"></div>
-      <div class="field"><label>Ruangan Siklus 3</label><input type="text" id="ab_ruangan2" list="dl_ruang_ab" placeholder="Kosongkan jika tidak pindah"></div>
+      <div class="field"><label>Ruangan Siklus 3</label><select id="ab_ruangan2"></select></div>
     </div>
-    <datalist id="dl_ruang_ab"></datalist>
     <div class="info">Antibiotik dievaluasi tiap <b>3 hari</b> (72 jam) selama <b>3 siklus / 9 hari</b>: form awal di hari ke-0, form lanjutan ke-1 di hari ke-3, form lanjutan ke-2 di hari ke-6. Kolom <b>"Status Siklus"</b> otomatis mengingatkan form siklus mana yang jatuh tempo / terlambat. Tanggal terisi otomatis saat status diubah ke "Sudah".</div>
     <div class="aksi">
       <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
@@ -461,10 +460,13 @@
         <div class="info">Logo otomatis diperkecil dan disimpan bersama data.</div>
       </div>
     </div>
+    <div class="field" style="margin-top:14px"><label>Daftar Ruangan (satu ruangan per baris) — dipakai sebagai pilihan dropdown di form</label>
+      <textarea id="set_ruangan" rows="5" placeholder="IGD&#10;ICU&#10;Rawat Inap Anak&#10;Rawat Inap Dewasa" style="padding:8px; border:1px solid var(--garis); border-radius:6px; font-family:inherit; resize:vertical;"></textarea>
+    </div>
     <div class="aksi">
       <button class="btn btn-simpan" onclick="simpanPengaturan()">💾 Simpan Pengaturan</button>
     </div>
-    <div class="info">Identitas ini otomatis dipakai di: header aplikasi, <b>kop surat saat mencetak</b> (misal Laporan Jaga IBS), dan baris judul pada semua <b>export Excel</b>. Tersimpan bersama database, jadi berlaku untuk semua perangkat dan ikut ter-backup.</div>
+    <div class="info">Identitas ini otomatis dipakai di: header aplikasi, <b>kop surat saat mencetak</b> (misal Laporan Jaga IBS), dan baris judul pada semua <b>export Excel</b>. Daftar ruangan menjadi pilihan dropdown ruangan di form Antibiotik. Tersimpan bersama database, jadi berlaku untuk semua perangkat dan ikut ter-backup.</div>
   </div>
 </section>
 
@@ -575,12 +577,18 @@ function ruangSiklus(r, c){
   if(c === 1) return nm(r.ruangan1) || nm(r.ruangan) || '(tanpa ruangan)';
   return nm(r.ruangan2) || nm(r.ruangan1) || nm(r.ruangan) || '(tanpa ruangan)';
 }
-function isiDatalistRuangAB(){
-  const el = $('dl_ruang_ab');
-  if(!el) return;
+function daftarRuanganLengkap(){
   const set = new Set(['IGD','ICU','Rawat Inap Anak','Rawat Inap Dewasa','Rawat Inap Perinatologi','Rawat Inap VK']);
+  (pengaturan().daftarRuangan || '').split(/[\n,;]+/).forEach(s => { s = s.trim(); if(s) set.add(s); });
   muat('antibiotik').forEach(r => ['ruangan','ruangan1','ruangan2'].forEach(k => { if((r[k]||'').trim()) set.add(r[k].trim()); }));
-  el.innerHTML = [...set].sort((a,b) => a.localeCompare(b, 'id')).map(v => `<option value="${esc(v)}">`).join('');
+  return [...set].sort((a,b) => a.localeCompare(b, 'id'));
+}
+function isiSelectRuangAB(){
+  const opsi = '<option value="">- Pilih ruangan -</option>' + daftarRuanganLengkap().map(v => `<option>${esc(v)}</option>`).join('');
+  ['ab_ruangan','ab_ruangan1','ab_ruangan2'].forEach(id => {
+    const el = $(id);
+    if(el){ const kini = el.value; el.innerHTML = opsi; el.value = kini; }
+  });
 }
 
 /* ====================== KONFIGURASI MODUL UTAMA ====================== */
@@ -814,7 +822,7 @@ function render(m){
       `<span>Halaman ${hal[m]} dari ${totalHal} &#8212; ${totalData} data</span>` +
       `<button class="btn-kecil btn-edit" ${hal[m] >= totalHal ? 'disabled' : ''} onclick="ubahHal('${m}',1)">Berikutnya &#8250;</button>`
     : (totalData ? totalData + ' data' : '');
-  if(m === 'ab'){ isiDatalistRuangAB(); renderStatAB(); }
+  if(m === 'ab'){ isiSelectRuangAB(); renderStatAB(); }
   if(m === 'mr') isiDatalist();
 }
 
@@ -925,6 +933,7 @@ function isiFormPengaturan(){
   $('set_alamat').value = p.alamat || '';
   $('set_telp').value = p.telp || '';
   $('set_email').value = p.email || '';
+  $('set_ruangan').value = p.daftarRuangan || '';
 }
 
 function simpanPengaturan(){
@@ -933,8 +942,10 @@ function simpanPengaturan(){
   p.alamat = $('set_alamat').value.trim();
   p.telp = $('set_telp').value.trim();
   p.email = $('set_email').value.trim();
+  p.daftarRuangan = $('set_ruangan').value.trim();
   taruh('pengaturan', [p]);
   terapkanPengaturan();
+  isiSelectRuangAB();
   alert('Pengaturan tersimpan.');
 }
 
