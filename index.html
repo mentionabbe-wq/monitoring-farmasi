@@ -163,7 +163,7 @@
     <div class="grid">
       <div class="field"><label>Tanggal Awal Antibiotik *</label><input type="date" id="ab_tanggal"></div>
       <div class="field"><label>Nama Pasien *</label><input type="text" id="ab_nama" placeholder="Nama pasien"></div>
-      <div class="field"><label>Asal Ruangan</label><input type="text" id="ab_ruangan" placeholder="Contoh: ICU, Anggrek"></div>
+      <div class="field"><label>Ruangan Siklus 1 (awal)</label><input type="text" id="ab_ruangan" list="dl_ruang_ab" placeholder="Contoh: IGD, ICU"></div>
       <div class="field"><label>Nomor Rekam Medis *</label><input type="text" id="ab_norm" placeholder="No. RM"></div>
       <div class="field"><label>Jenis Antibiotik</label>
         <select id="ab_jenis">
@@ -187,11 +187,14 @@
         <select id="ab_form1" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
       </div>
       <div class="field"><label>Tgl Pengisian Form Lanjutan ke-1</label><input type="date" id="ab_tgl1"></div>
+      <div class="field"><label>Ruangan Siklus 2</label><input type="text" id="ab_ruangan1" list="dl_ruang_ab" placeholder="Kosongkan jika tidak pindah"></div>
       <div class="field"><label>Form Lanjutan ke-2 / Siklus 3 (hari ke-6)</label>
         <select id="ab_form2" onchange="abToggle()"><option>Belum</option><option>Sudah</option></select>
       </div>
       <div class="field"><label>Tgl Pengisian Form Lanjutan ke-2</label><input type="date" id="ab_tgl2"></div>
+      <div class="field"><label>Ruangan Siklus 3</label><input type="text" id="ab_ruangan2" list="dl_ruang_ab" placeholder="Kosongkan jika tidak pindah"></div>
     </div>
+    <datalist id="dl_ruang_ab"></datalist>
     <div class="info">Antibiotik dievaluasi tiap <b>3 hari</b> (72 jam) selama <b>3 siklus / 9 hari</b>: form awal di hari ke-0, form lanjutan ke-1 di hari ke-3, form lanjutan ke-2 di hari ke-6. Kolom <b>"Status Siklus"</b> otomatis mengingatkan form siklus mana yang jatuh tempo / terlambat. Tanggal terisi otomatis saat status diubah ke "Sudah".</div>
     <div class="aksi">
       <button class="btn btn-simpan" onclick="simpan('ab')">💾 Simpan</button>
@@ -565,6 +568,20 @@ function aktifkanAB(id){
   taruh('antibiotik', data);
   render('ab');
 }
+// Ruangan tiap siklus (dengan fallback ke siklus sebelumnya jika tidak pindah)
+function ruangSiklus(r, c){
+  const nm = v => (v || '').trim();
+  if(c === 0) return nm(r.ruangan) || '(tanpa ruangan)';
+  if(c === 1) return nm(r.ruangan1) || nm(r.ruangan) || '(tanpa ruangan)';
+  return nm(r.ruangan2) || nm(r.ruangan1) || nm(r.ruangan) || '(tanpa ruangan)';
+}
+function isiDatalistRuangAB(){
+  const el = $('dl_ruang_ab');
+  if(!el) return;
+  const set = new Set(['IGD','ICU','Rawat Inap Anak','Rawat Inap Dewasa','Rawat Inap Perinatologi','Rawat Inap VK']);
+  muat('antibiotik').forEach(r => ['ruangan','ruangan1','ruangan2'].forEach(k => { if((r[k]||'').trim()) set.add(r[k].trim()); }));
+  el.innerHTML = [...set].sort((a,b) => a.localeCompare(b, 'id')).map(v => `<option value="${esc(v)}">`).join('');
+}
 
 /* ====================== KONFIGURASI MODUL UTAMA ====================== */
 /* tiap modul: key penyimpanan, daftar field {id input, key data, label}, kolom pencarian */
@@ -574,7 +591,7 @@ const MODUL = {
     fields:[
       {i:'ab_tanggal', k:'tanggal', l:'Tanggal Awal AB', tgl:true},
       {i:'ab_nama', k:'nama', l:'Nama Pasien', wajib:true},
-      {i:'ab_ruangan', k:'ruangan', l:'Asal Ruangan'},
+      {i:'ab_ruangan', k:'ruangan', l:'Ruangan Siklus 1'},
       {i:'ab_norm', k:'norm', l:'No. RM', wajib:true},
       {i:'ab_jenis', k:'jenis', l:'Jenis AB'},
       {i:'ab_antibiotik', k:'antibiotik', l:'Nama Antibiotik'},
@@ -584,10 +601,12 @@ const MODUL = {
       {i:'ab_tglkumpul', k:'tglkumpul', l:'Tgl Form Awal', tgl:true},
       {i:'ab_form1', k:'form1', l:'Form Lanjutan ke-1'},
       {i:'ab_tgl1', k:'tgl1', l:'Tgl Form Lanjutan ke-1', tgl:true},
+      {i:'ab_ruangan1', k:'ruangan1', l:'Ruangan Siklus 2'},
       {i:'ab_form2', k:'form2', l:'Form Lanjutan ke-2'},
-      {i:'ab_tgl2', k:'tgl2', l:'Tgl Form Lanjutan ke-2', tgl:true}
+      {i:'ab_tgl2', k:'tgl2', l:'Tgl Form Lanjutan ke-2', tgl:true},
+      {i:'ab_ruangan2', k:'ruangan2', l:'Ruangan Siklus 3'}
     ],
-    cari:['nama','norm','ruangan','antibiotik','dokter'],
+    cari:['nama','norm','ruangan','ruangan1','ruangan2','antibiotik','dokter'],
     nEkstra:2,
     ekstraTh:'<th>Form Awal</th><th>Status Siklus</th>',
     ekstraTd: r => {
@@ -687,9 +706,13 @@ function saringCari(m, data){
   if(q) data = data.filter(r => cfg.cari.some(k => (r[k]||'').toLowerCase().includes(q)));
   return data;
 }
+function ruangSemua(m, r){ // semua ruangan pada satu baris (ab = 3 siklus)
+  if(m === 'ab') return [ruangSiklus(r,0), ruangSiklus(r,1), ruangSiklus(r,2)];
+  return [(r.ruangan||'').trim() || '(tanpa ruangan)'];
+}
 function saringRuang(m, data){ // filter pilih ruangan (jika ada dropdown-nya)
   const sel = $(m+'_fr');
-  if(sel && sel.value) data = data.filter(r => ((r.ruangan||'').trim() || '(tanpa ruangan)') === sel.value);
+  if(sel && sel.value) data = data.filter(r => ruangSemua(m, r).includes(sel.value));
   return data;
 }
 function tersaring(m, data){ return saringRuang(m, saringTanggal(m, saringCari(m, data))); }
@@ -698,7 +721,7 @@ function isiFilterRuang(m, semua){ // isi opsi dropdown ruangan dari data
   if(!sel) return;
   const kini = sel.value;
   const set = new Set();
-  semua.forEach(r => set.add((r.ruangan||'').trim() || '(tanpa ruangan)'));
+  semua.forEach(r => ruangSemua(m, r).forEach(v => set.add(v)));
   const opsi = [...set].sort((a,b) => a.localeCompare(b, 'id'));
   sel.innerHTML = '<option value="">Semua Ruangan</option>' + opsi.map(v => `<option${v===kini?' selected':''}>${esc(v)}</option>`).join('');
 }
@@ -791,7 +814,7 @@ function render(m){
       `<span>Halaman ${hal[m]} dari ${totalHal} &#8212; ${totalData} data</span>` +
       `<button class="btn-kecil btn-edit" ${hal[m] >= totalHal ? 'disabled' : ''} onclick="ubahHal('${m}',1)">Berikutnya &#8250;</button>`
     : (totalData ? totalData + ' data' : '');
-  if(m === 'ab') renderStatAB();
+  if(m === 'ab'){ isiDatalistRuangAB(); renderStatAB(); }
   if(m === 'mr') isiDatalist();
 }
 
@@ -815,13 +838,14 @@ function renderStatAB(){
   const perRuang = {};
   let takcatat = 0;
   data.forEach(r => {
-    const nama = (r.ruangan || '').trim() || '(tanpa ruangan)';
-    if(!perRuang[nama]) perRuang[nama] = [{tepat:0, telat:0}, {tepat:0, telat:0}, {tepat:0, telat:0}];
     for(let c = 0; c < 3; c++){
       const s = siklusInfo(r, c);
-      if(s === 'tepat'){ stat[c].tepat++; perRuang[nama][c].tepat++; }
-      else if(s === 'telat'){ stat[c].telat++; perRuang[nama][c].telat++; }
-      else if(s === 'takcatat') takcatat++;
+      if(s === 'takcatat'){ takcatat++; continue; }
+      if(s !== 'tepat' && s !== 'telat') continue;
+      stat[c][s]++;
+      const nama = ruangSiklus(r, c); // tiap siklus dihitung di ruangan siklus itu
+      if(!perRuang[nama]) perRuang[nama] = [{tepat:0, telat:0}, {tepat:0, telat:0}, {tepat:0, telat:0}];
+      perRuang[nama][c][s]++;
     }
   });
   const persen = (n, t) => t ? (n / t * 100).toFixed(1).replace(/\.0$/,'') + '%' : '-';
@@ -1510,7 +1534,8 @@ function renderDashboard(){
   } else {
     merah.forEach(r => {
       const s = statusSiklus(r);
-      t += `<tr><td>${esc(r.nama || '-')}</td><td>${esc(r.norm || '-')}</td><td>${esc(r.ruangan || '-')}</td>` +
+      const rg = ruangSiklus(r, 2); // ruangan terkini
+      t += `<tr><td>${esc(r.nama || '-')}</td><td>${esc(r.norm || '-')}</td><td>${esc(rg === '(tanpa ruangan)' ? '-' : rg)}</td>` +
         `<td>${esc(r.antibiotik || '-')}</td><td><span class="badge ${s.c}">${esc(s.t)}</span></td></tr>`;
     });
   }
